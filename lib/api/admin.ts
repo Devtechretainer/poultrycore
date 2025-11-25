@@ -159,7 +159,7 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
     if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       return {
         success: false,
-        message: `Unable to connect to the Admin API at ${API_BASE_URL}. Please ensure the server is running.`,
+        message: `Unable to connect to the Admin API at ${API_BASE_URL}. Please ensure the server is running and CORS is configured to allow requests from your frontend domain.`,
       }
     }
     

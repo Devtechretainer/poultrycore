@@ -252,7 +252,7 @@ export async function login(data: LoginData): Promise<ApiResponse> {
     let errorMessage = "Network error. Please try again."
     
     if (error instanceof TypeError && error.message === "Failed to fetch") {
-      errorMessage = "Unable to connect to the server. Please check if the backend API is running and accessible. If using HTTPS, you may need to accept the SSL certificate in your browser."
+      errorMessage = `Unable to connect to the server at ${API_BASE_URL}. Please check if the backend API is running and accessible. If using HTTPS, you may need to accept the SSL certificate. Also check CORS configuration on the backend.`
     } else if (error instanceof TypeError && error.message.includes("CORS")) {
       errorMessage = "CORS error. Please check the server configuration."
     } else if (error instanceof TypeError && error.message.includes("NetworkError")) {
