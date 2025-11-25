@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: poultry-frontend
+    runtime: docker
+    plan: starter
+    region: oregon
+    branch: win
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false
+        value: https://farmapi.poultrycore.com
+      - key: NEXT_PUBLIC_ADMIN_API_URL
+        sync: false
+        value: https://usermanagementapi.poultrycore.com
+      - key: NEXT_PUBLIC_ENABLE_ANALYTICS
+        value: false
+      - key: NEXT_PUBLIC_ENABLE_PWA
+        value: false
+    healthCheckPath: /
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
