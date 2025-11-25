@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7190"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://farmapi.poultrycore.com"
 
 // Log the configuration on load (only in browser)
 if (typeof window !== "undefined") {

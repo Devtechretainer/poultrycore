@@ -182,7 +182,7 @@ class ApiClient {
 
 // Singleton instance
 export const apiClient = new ApiClient(
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:7190'
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://farmapi.poultrycore.com'
 )
 
 // Initialize token from localStorage on client side

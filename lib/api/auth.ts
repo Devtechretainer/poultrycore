@@ -1,7 +1,7 @@
 // API utility functions for authentication 
 
 // Use Admin API URL for authentication endpoints
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://localhost:7010"
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
 
 export interface RegisterData {
   farmName: string
