@@ -1,6 +1,6 @@
 // Houses REST client targeting PoultryFarmAPI
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7190"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://farmapi.poultrycore.com"
 
 export interface House {
   houseId: number

@@ -32,7 +32,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem("auth_token")
       
       // Call the API to enable 2FA
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7010"}/api/Authentication/enable-2fa`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"}/api/Authentication/enable-2fa`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

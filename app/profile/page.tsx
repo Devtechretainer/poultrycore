@@ -172,7 +172,7 @@ export default function ProfilePage() {
 
     try {
       const token = localStorage.getItem("auth_token")
-      const baseUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7010"
+      const baseUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"
       const response = await fetch(`${baseUrl}/api/Authentication/update-profile`, {
         method: "PUT",
         headers: {

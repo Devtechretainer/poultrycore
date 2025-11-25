@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./config";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://localhost:7010";
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com";
 
 export type FarmSummary = {
   farmId: string;

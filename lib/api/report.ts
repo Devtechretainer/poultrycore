@@ -1,6 +1,6 @@
 // API utility functions for Report management
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7190"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://farmapi.poultrycore.com"
 
 export interface ReportRequest {
   farmId: string

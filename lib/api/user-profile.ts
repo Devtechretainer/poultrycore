@@ -1,6 +1,6 @@
 // API utility functions for user profile management
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7010"
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"
 
 export interface UserProfile {
   id: string
