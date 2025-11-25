@@ -1,6 +1,10 @@
 // API utility functions for authentication 
 
 // Use Admin API URL for authentication endpoints
+// For local development with ngrok, you may need to:
+// 1. Run the backend locally and set NEXT_PUBLIC_ADMIN_API_URL to http://localhost:PORT
+// 2. Or update the production backend CORS to allow your ngrok domain
+// Example: NEXT_PUBLIC_ADMIN_API_URL=http://localhost:7010
 const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
 
 export interface RegisterData {
@@ -83,14 +87,61 @@ export async function login(data: LoginData): Promise<ApiResponse> {
   try {
     console.log("[Poultry Core] Login request:", { username: data.username, apiUrl: API_BASE_URL })
 
-    const response = await fetch(`${API_BASE_URL}/api/Authentication/login`, {
-      method: "POST",
-      headers: {
-        accept: "*/*",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
+    // Create AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+    let response: Response
+    try {
+      response = await fetch(`${API_BASE_URL}/api/Authentication/login`, {
+        method: "POST",
+        headers: {
+          accept: "*/*",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId)
+      
+      // Handle specific fetch errors
+      if (fetchError.name === 'AbortError') {
+        console.error("[Poultry Core] Request timeout:", API_BASE_URL)
+        return {
+          success: false,
+          message: `Request timed out. The server at ${API_BASE_URL} is not responding. Please check if the API is running and accessible.`,
+        }
+      }
+      
+      // Network errors (CORS, connection refused, etc.)
+      console.error("[Poultry Core] Fetch error:", fetchError)
+      console.error("[Poultry Core] Error details:", {
+        name: fetchError.name,
+        message: fetchError.message,
+        stack: fetchError.stack,
+      })
+      
+      // Provide specific error messages
+      let errorMessage = `Unable to connect to the server at ${API_BASE_URL}. `
+      
+      if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+        errorMessage += "This could be due to:\n"
+        errorMessage += "1. The backend API is not running\n"
+        errorMessage += "2. CORS configuration issue on the backend\n"
+        errorMessage += "3. Network connectivity problem\n"
+        errorMessage += "4. SSL certificate issue (if using HTTPS)\n"
+        errorMessage += `\nPlease verify that ${API_BASE_URL} is accessible and the API is running.`
+      } else {
+        errorMessage += fetchError.message || "Network error. Please try again."
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      }
+    }
 
     // Check if response is actually JSON
     const contentType = response.headers.get("content-type")
@@ -245,18 +296,33 @@ export async function login(data: LoginData): Promise<ApiResponse> {
       data: result,
       message: result.message || "Login successful",
     }
-  } catch (error) {
-    console.error("[v0] Login error:", error)
+  } catch (error: any) {
+    console.error("[Poultry Core] Login error:", error)
+    console.error("[Poultry Core] Error type:", error?.constructor?.name)
+    console.error("[Poultry Core] Error message:", error?.message)
     
     // Provide more specific error messages based on the error type
     let errorMessage = "Network error. Please try again."
     
-    if (error instanceof TypeError && error.message === "Failed to fetch") {
-      errorMessage = `Unable to connect to the server at ${API_BASE_URL}. Please check if the backend API is running and accessible. If using HTTPS, you may need to accept the SSL certificate. Also check CORS configuration on the backend.`
-    } else if (error instanceof TypeError && error.message.includes("CORS")) {
-      errorMessage = "CORS error. Please check the server configuration."
-    } else if (error instanceof TypeError && error.message.includes("NetworkError")) {
-      errorMessage = "Network connection failed. Please check your internet connection."
+    if (error instanceof TypeError) {
+      if (error.message === "Failed to fetch" || error.message.includes("Failed to fetch")) {
+        errorMessage = `Unable to connect to the server at ${API_BASE_URL}.\n\nPossible causes:\n`
+        errorMessage += `• The backend API is not running\n`
+        errorMessage += `• CORS configuration issue - the backend needs to allow requests from ${typeof window !== 'undefined' ? window.location.origin : 'your frontend'}\n`
+        errorMessage += `• Network connectivity problem\n`
+        errorMessage += `• SSL certificate issue (if using HTTPS)\n\n`
+        errorMessage += `Please verify that ${API_BASE_URL} is accessible.`
+      } else if (error.message.includes("CORS")) {
+        errorMessage = `CORS error: The backend at ${API_BASE_URL} is not allowing requests from this origin. Please check the CORS configuration on the backend.`
+      } else if (error.message.includes("NetworkError")) {
+        errorMessage = "Network connection failed. Please check your internet connection."
+      } else {
+        errorMessage = `Network error: ${error.message || "Unknown error occurred"}`
+      }
+    } else if (error?.name === "AbortError") {
+      errorMessage = `Request timed out. The server at ${API_BASE_URL} is not responding.`
+    } else {
+      errorMessage = error?.message || "An unexpected error occurred. Please try again."
     }
     
     return {
