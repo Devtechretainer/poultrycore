@@ -1,7 +1,7 @@
 // Admin API uses different port than other APIs
 import { getAuthHeaders } from './config'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://UserManagementAPI.techretainer.com"
 
 export interface Employee {
   id: string
