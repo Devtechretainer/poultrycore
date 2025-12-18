@@ -5,7 +5,7 @@
 // 1. Run the backend locally and set NEXT_PUBLIC_ADMIN_API_URL to http://localhost:PORT
 // 2. Or update the production backend CORS to allow your ngrok domain
 // Example: NEXT_PUBLIC_ADMIN_API_URL=http://localhost:7010
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://UserManagementAPI.techretainer.com"
 
 export interface RegisterData {
   farmName: string
