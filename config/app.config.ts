@@ -1,6 +1,6 @@
 export const appConfig = {
   api: {
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://farmapi.poultrycore.com',
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://FarmAPI.techretainer.com',
     timeout: 30000,
   },
   app: {
