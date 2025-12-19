@@ -31,7 +31,9 @@ import {
   UserCog,
   Bell,
   ListTodo,
-  BookOpen
+  BookOpen,
+  Menu,
+  X
 } from "lucide-react"
 import { InventoryLogo } from "@/components/auth/logo"
 import { useAlertsStore, type AlertItem } from "@/lib/store/alerts-store"
@@ -221,23 +223,37 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
       {/* Logo and Toggle */}
       <div className="flex h-16 shrink-0 items-center px-3 gap-0.5 border-b border-slate-800">
         {!isCollapsed && (
-          <>
-            <InventoryLogo />
-            <span className="text-white font-bold text-sm whitespace-nowrap ml-2">Poultry Core</span>
-          </>
+          <InventoryLogo />
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggle}
-          className={cn(
-            "ml-auto text-slate-300 hover:bg-slate-800 hover:text-white",
-            isCollapsed && "mx-auto"
-          )}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-        </Button>
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggle}
+                className="mx-auto text-slate-300 hover:bg-slate-800 hover:text-white"
+                aria-label="Expand sidebar"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-slate-800 text-white border-slate-700">
+              Show Sidebar
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggle}
+            className="ml-auto text-slate-300 hover:bg-slate-800 hover:text-white"
+            aria-label="Hide sidebar"
+            title="Hide Sidebar"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       {/* Navigation */}
