@@ -15,9 +15,12 @@ export default function DashboardPage() {
 
   // Check if user has 2FA enabled
   useEffect(() => {
-    // TODO: Check from user profile if 2FA is enabled
+    // Check from localStorage if 2FA is enabled
     const check2FA = localStorage.getItem("twoFactorEnabled")
-    if (check2FA !== "true") {
+    const skipped2FA = localStorage.getItem("2FASkipped")
+    
+    // Only show dialog if 2FA is not enabled and user hasn't skipped it
+    if (check2FA !== "true" && skipped2FA !== "true") {
       // Show dialog after a short delay
       const timer = setTimeout(() => {
         setShow2FASetup(true)

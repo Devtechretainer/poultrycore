@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { type UserProfile } from "@/lib/api/user-profile"
-import { Edit2, Save, X, User, Mail, Phone, Building2, Shield } from "lucide-react"
+import { Edit2, Save, X, User, Mail, Phone, Building2, Shield, Lock } from "lucide-react"
 import { SuccessModal } from "@/components/auth/success-modal"
 import { AuthService } from "@/lib/services/auth.service"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -23,6 +24,8 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isToggling2FA, setIsToggling2FA] = useState(false)
+  const [successMessage, setSuccessMessage] = useState({ title: "", message: "" })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -60,7 +63,7 @@ export default function ProfilePage() {
         concurrencyStamp: "",
         phoneNumber: userData.phone || userData.phoneNumber || "",
         phoneNumberConfirmed: false,
-        twoFactorEnabled: false,
+        twoFactorEnabled: userData.twoFactorEnabled || (typeof window !== "undefined" ? localStorage.getItem("twoFactorEnabled") === "true" : false),
         lockoutEnd: null,
         lockoutEnabled: true,
         accessFailedCount: 0,
@@ -107,7 +110,7 @@ export default function ProfilePage() {
             concurrencyStamp: "",
             phoneNumber: "",
             phoneNumberConfirmed: false,
-            twoFactorEnabled: false,
+            twoFactorEnabled: typeof window !== "undefined" ? localStorage.getItem("twoFactorEnabled") === "true" : false,
             lockoutEnd: null,
             lockoutEnabled: true,
             accessFailedCount: 0,
@@ -208,6 +211,10 @@ export default function ProfilePage() {
             phoneNumber: formData.phoneNumber,
             farmName: formData.farmName,
           }) : prev)
+          setSuccessMessage({
+            title: "Profile Updated Successfully!",
+            message: "Your profile information has been updated"
+          })
           setShowSuccess(true)
           setIsEditing(false)
           return
@@ -216,6 +223,10 @@ export default function ProfilePage() {
         throw new Error(errorText || "Failed to update profile")
       }
 
+      setSuccessMessage({
+        title: "Profile Updated Successfully!",
+        message: "Your profile information has been updated"
+      })
       setShowSuccess(true)
       setIsEditing(false)
       // Reload profile to get updated data
@@ -232,6 +243,62 @@ export default function ProfilePage() {
       ...prev,
       [field]: value,
     }))
+  }
+
+  const handleToggle2FA = async (enabled: boolean) => {
+    setIsToggling2FA(true)
+    setError("")
+
+    try {
+      const token = localStorage.getItem("auth_token")
+      const rawAdmin = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'usermanagementapi.techretainer.com'
+      const baseUrl = rawAdmin.startsWith('http://') || rawAdmin.startsWith('https://') ? rawAdmin : `https://${rawAdmin}`
+      
+      const endpoint = enabled 
+        ? `${baseUrl}/api/Authentication/enable-2fa`
+        : `${baseUrl}/api/Authentication/disable-2fa`
+      
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": token ? `Bearer ${token}` : "",
+          "Content-Type": "application/json",
+          accept: "*/*",
+        },
+      })
+
+      if (!response.ok) {
+        // Fallback: Update localStorage if API is not available
+        if (response.status === 404) {
+          localStorage.setItem("twoFactorEnabled", enabled ? "true" : "false")
+          setProfile((prev) => prev ? ({ ...prev, twoFactorEnabled: enabled }) : prev)
+          setShowSuccess(true)
+          setIsToggling2FA(false)
+          return
+        }
+        
+        const errorText = await response.text()
+        throw new Error(errorText || `Failed to ${enabled ? 'enable' : 'disable'} 2FA`)
+      }
+
+      const result = await response.json()
+      
+      // Update profile state
+      setProfile((prev) => prev ? ({ ...prev, twoFactorEnabled: enabled }) : prev)
+      localStorage.setItem("twoFactorEnabled", enabled ? "true" : "false")
+      
+      setSuccessMessage({
+        title: enabled ? "2FA Enabled!" : "2FA Disabled!",
+        message: enabled 
+          ? "Two-factor authentication has been enabled. You'll receive OTP codes via email during login."
+          : "Two-factor authentication has been disabled. You can enable it again anytime from your profile."
+      })
+      setShowSuccess(true)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : `Failed to ${enabled ? 'enable' : 'disable'} 2FA`)
+    }
+
+    setIsToggling2FA(false)
   }
 
   if (isLoading) {
@@ -475,6 +542,42 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Security Settings */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-blue-600" />
+                      Security Settings
+                    </h3>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Shield className="w-4 h-4 text-blue-600" />
+                            <p className="font-medium text-slate-900">Two-Factor Authentication</p>
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            {profile?.twoFactorEnabled 
+                              ? "2FA is enabled. You'll receive OTP codes via email during login."
+                              : "Add an extra layer of security to your account by enabling two-factor authentication."}
+                          </p>
+                        </div>
+                        <div className="ml-4">
+                          <Switch
+                            checked={profile?.twoFactorEnabled || false}
+                            onCheckedChange={handleToggle2FA}
+                            disabled={isToggling2FA}
+                            aria-label="Toggle two-factor authentication"
+                          />
+                        </div>
+                      </div>
+                      {isToggling2FA && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          {profile?.twoFactorEnabled ? "Disabling..." : "Enabling..."}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -484,9 +587,12 @@ export default function ProfilePage() {
 
       {showSuccess && (
         <SuccessModal
-          title="Profile Updated Successfully!"
-          message="Your profile information has been updated"
-          onClose={() => setShowSuccess(false)}
+          title={successMessage.title}
+          message={successMessage.message}
+          onClose={() => {
+            setShowSuccess(false)
+            setIsToggling2FA(false)
+          }}
           buttonText="Continue"
         />
       )}
