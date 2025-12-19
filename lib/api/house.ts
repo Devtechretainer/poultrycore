@@ -1,6 +1,11 @@
 // Houses REST client targeting PoultryFarmAPI
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://farmapi.poultrycore.com"
+function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
+  const val = raw || fallback
+  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
+}
+
+const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
 
 export interface House {
   houseId: number

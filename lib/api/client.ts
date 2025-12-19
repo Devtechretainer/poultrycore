@@ -181,8 +181,14 @@ class ApiClient {
 }
 
 // Singleton instance
+function normalizeBaseUrl(raw?: string, fallback = 'https://farmapi.techretainer.com') {
+  const val = raw || fallback
+  if (val.startsWith('http://') || val.startsWith('https://')) return val
+  return `https://${val}`
+}
+
 export const apiClient = new ApiClient(
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://farmapi.poultrycore.com'
+  normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL, 'https://farmapi.techretainer.com')
 )
 
 // Initialize token from localStorage on client side

@@ -1,6 +1,8 @@
 export const appConfig = {
   api: {
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://farmapi.poultrycore.com',
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL && (process.env.NEXT_PUBLIC_API_BASE_URL.startsWith('http://') || process.env.NEXT_PUBLIC_API_BASE_URL.startsWith('https://'))
+      ? process.env.NEXT_PUBLIC_API_BASE_URL
+      : (process.env.NEXT_PUBLIC_API_BASE_URL ? `https://${process.env.NEXT_PUBLIC_API_BASE_URL}` : 'https://farmapi.techretainer.com'),
     timeout: 30000,
   },
   app: {

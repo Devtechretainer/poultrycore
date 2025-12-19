@@ -32,7 +32,9 @@ export default function DashboardPage() {
       const token = localStorage.getItem("auth_token")
       
       // Call the API to enable 2FA
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"}/api/Authentication/enable-2fa`, {
+      const rawAdmin = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'usermanagementapi.techretainer.com'
+      const baseUrl = rawAdmin.startsWith('http://') || rawAdmin.startsWith('https://') ? rawAdmin : `https://${rawAdmin}`
+      const response = await fetch(`${baseUrl}/api/Authentication/enable-2fa`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

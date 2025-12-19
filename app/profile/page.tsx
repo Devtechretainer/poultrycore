@@ -172,7 +172,8 @@ export default function ProfilePage() {
 
     try {
       const token = localStorage.getItem("auth_token")
-      const baseUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"
+      const rawAdmin = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'usermanagementapi.techretainer.com'
+      const baseUrl = rawAdmin.startsWith('http://') || rawAdmin.startsWith('https://') ? rawAdmin : `https://${rawAdmin}`
       const response = await fetch(`${baseUrl}/api/Authentication/update-profile`, {
         method: "PUT",
         headers: {

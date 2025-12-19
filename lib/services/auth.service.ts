@@ -52,7 +52,10 @@ export class AuthService {
    */
   static async login2FA(credentials: Login2FACredentials): Promise<AuthResponse> {
     // Use Login API base URL directly to avoid baseURL mismatches
-    const baseUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'https://usermanagementapi.poultrycore.com'
+    const rawAdmin = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.techretainer.com'
+    const baseUrl = rawAdmin.startsWith('http://') || rawAdmin.startsWith('https://')
+      ? rawAdmin
+      : `https://${rawAdmin}`
     const res = await fetch(`${baseUrl}/api/Authentication/login-2FA`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: '*/*' },

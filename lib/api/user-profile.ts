@@ -1,6 +1,16 @@
 // API utility functions for user profile management
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://usermanagementapi.poultrycore.com"
+function normalizeAdminBase(raw?: string, fallback = 'usermanagementapi.techretainer.com') {
+  const val = raw || fallback
+  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
+}
+
+function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
+  const val = raw || fallback
+  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
+}
+
+const API_BASE_URL = normalizeAdminBase(process.env.NEXT_PUBLIC_ADMIN_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL)
 
 export interface UserProfile {
   id: string

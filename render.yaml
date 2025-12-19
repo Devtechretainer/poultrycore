@@ -12,10 +12,10 @@ services:
         value: 3000
       - key: NEXT_PUBLIC_API_BASE_URL
         sync: false
-        value: https://farmapi.poultrycore.com
+        value: https://farmapi.techretainer.com
       - key: NEXT_PUBLIC_ADMIN_API_URL
         sync: false
-        value: https://usermanagementapi.poultrycore.com
+        value: https://usermanagementapi.techretainer.com
       - key: NEXT_PUBLIC_ENABLE_ANALYTICS
         value: false
       - key: NEXT_PUBLIC_ENABLE_PWA
