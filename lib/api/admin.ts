@@ -1,12 +1,7 @@
 // Admin API uses different port than other APIs
 import { getAuthHeaders } from './config'
 
-function normalizeAdminBase(raw?: string, fallback = 'usermanagementapi.techretainer.com') {
-  const val = raw || fallback
-  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
-}
-
-const API_BASE_URL = normalizeAdminBase(process.env.NEXT_PUBLIC_ADMIN_API_URL)
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
 
 export interface Employee {
   id: string
