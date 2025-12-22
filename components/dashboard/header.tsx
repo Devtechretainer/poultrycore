@@ -31,7 +31,10 @@ export function DashboardHeader() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleMobile}
+          onClick={() => {
+            console.log('[Header] Hamburger button clicked')
+            toggleMobile()
+          }}
           className="text-slate-300 hover:text-white hover:bg-slate-800 lg:hidden"
           aria-label="Toggle sidebar"
         >
