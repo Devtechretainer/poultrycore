@@ -15,7 +15,9 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Plus, Pencil, Trash2, Calendar, Bird, Users, MapPin, AlertCircle, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Plus, Pencil, Trash2, Calendar, Bird, Users, MapPin, AlertCircle, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react"
+import { useIsMobile } from '@/hooks/use-mobile'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { getFlocks, deleteFlock, type Flock } from "@/lib/api/flock"
@@ -44,6 +46,8 @@ export default function FlocksPage() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [quantityMin, setQuantityMin] = useState<string>("")
   const [quantityMax, setQuantityMax] = useState<string>("")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const isMobile = useIsMobile()
   
   // Sorting state
   const [sortField, setSortField] = useState<string | null>(null)
@@ -346,94 +350,205 @@ export default function FlocksPage() {
               </Link>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
-              <div className="relative w-full sm:w-[240px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Search by name, breed, or notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-              </div>
-
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedHouseId} onValueChange={setSelectedHouseId}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="House" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Houses</SelectItem>
-                  {houses.map(h => (
-                    <SelectItem key={h.houseId} value={String(h.houseId)}>{(h as any).houseName || (h as any).name || `House ${h.houseId}`}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Batch" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Batches</SelectItem>
-                  {flockBatches.map(b => (
-                    <SelectItem key={b.batchId} value={String(b.batchId)}>{b.batchName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateFrom && "text-muted-foreground")}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {dateFrom ? format(dateFrom, "MMM dd") : "From Date"}
+            {/* Filters: inline on desktop, sheet on mobile */}
+            {isMobile ? (
+              <>
+                <div className="flex w-full items-center gap-2 p-2">
+                  <div className="flex-1" />
+                  <Button variant="outline" onClick={() => setFiltersOpen(true)} className="ml-auto">
+                    <Filter className="mr-2 h-4 w-4" /> Filters
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
-                </PopoverContent>
-              </Popover>
+                </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateTo && "text-muted-foreground")}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {dateTo ? format(dateTo, "MMM dd") : "To Date"}
+                <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <SheetContent side="right">
+                    <SheetHeader>
+                      <SheetTitle>Filters</SheetTitle>
+                    </SheetHeader>
+                    <div className="p-4 space-y-3">
+                      {/* reuse the same filter controls inside the sheet */}
+                      <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input placeholder="Search by name, breed, or notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                      </div>
+
+                      <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Statuses</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={selectedHouseId} onValueChange={setSelectedHouseId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="House" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Houses</SelectItem>
+                          {houses.map(h => (
+                            <SelectItem key={h.houseId} value={String(h.houseId)}>{(h as any).houseName || (h as any).name || `House ${h.houseId}`}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Batch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Batches</SelectItem>
+                          {flockBatches.map(b => (
+                            <SelectItem key={b.batchId} value={String(b.batchId)}>{b.batchName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("justify-start text-left font-normal w-full", !dateFrom && "text-muted-foreground")}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {dateFrom ? format(dateFrom, "MMM dd") : "From Date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("justify-start text-left font-normal w-full", !dateTo && "text-muted-foreground")}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {dateTo ? format(dateTo, "MMM dd") : "To Date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min Quantity"
+                          value={quantityMin}
+                          onChange={(e) => handleQuantityMinChange(e.target.value)}
+                          className="flex-1"
+                        />
+
+                        <Input
+                          type="number"
+                          placeholder="Max Quantity"
+                          value={quantityMax}
+                          onChange={(e) => handleQuantityMaxChange(e.target.value)}
+                          className="flex-1"
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button variant="outline" size="sm" onClick={clearFilters}>
+                          <RefreshCw className="h-4 w-4 mr-2" /> Reset
+                        </Button>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
+                <div className="relative w-full sm:w-[240px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input placeholder="Search by name, breed, or notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                </div>
+
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedHouseId} onValueChange={setSelectedHouseId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="House" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Houses</SelectItem>
+                    {houses.map(h => (
+                      <SelectItem key={h.houseId} value={String(h.houseId)}>{(h as any).houseName || (h as any).name || `House ${h.houseId}`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Batches</SelectItem>
+                    {flockBatches.map(b => (
+                      <SelectItem key={b.batchId} value={String(b.batchId)}>{b.batchName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateFrom && "text-muted-foreground")}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "MMM dd") : "From Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateTo && "text-muted-foreground")}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "MMM dd") : "To Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
+                  </PopoverContent>
+                </Popover>
+
+                <Input
+                  type="number"
+                  placeholder="Min Quantity"
+                  value={quantityMin}
+                  onChange={(e) => handleQuantityMinChange(e.target.value)}
+                  className="w-[120px]"
+                />
+
+                <Input
+                  type="number"
+                  placeholder="Max Quantity"
+                  value={quantityMax}
+                  onChange={(e) => handleQuantityMaxChange(e.target.value)}
+                  className="w-[120px]"
+                />
+
+                <div className="ml-auto">
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Reset
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
-                </PopoverContent>
-              </Popover>
-
-              <Input
-                type="number"
-                placeholder="Min Quantity"
-                value={quantityMin}
-                onChange={(e) => handleQuantityMinChange(e.target.value)}
-                className="w-[120px]"
-              />
-
-              <Input
-                type="number"
-                placeholder="Max Quantity"
-                value={quantityMax}
-                onChange={(e) => handleQuantityMaxChange(e.target.value)}
-                className="w-[120px]"
-              />
-
-              <div className="ml-auto">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Reset
-                </Button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Error Alert */}
             {error && (
