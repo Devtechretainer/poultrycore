@@ -1,9 +1,4 @@
-function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
-  const val = raw || fallback
-  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
-}
-
-const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+import { buildApiUrl, getAuthHeaders } from './config'
 
 export interface FlockBatch {
   batchId: number;
@@ -25,32 +20,62 @@ export interface ApiResponse<T = any> {
   errors?: string[];
 }
 
+// Helper function to extract error message from response
+async function getErrorMessage(response: Response, defaultMessage: string): Promise<string> {
+  try {
+    const errorData = await response.json()
+    // Check if we got meaningful error data
+    if (errorData && typeof errorData === 'object') {
+      // Try to extract message from various possible fields
+      const message = errorData.message || errorData.error || errorData.Message || errorData.Error
+      if (message) return message
+      
+      // If it's not an empty object, try to extract raw text
+      if (errorData.raw) return errorData.raw
+      
+      // If object has keys but no message, include status info
+      const keys = Object.keys(errorData)
+      if (keys.length > 0) {
+        return `${defaultMessage} (Status: ${response.status})`
+      }
+    }
+    // Empty object or no meaningful data
+    return `${defaultMessage} (Status: ${response.status} ${response.statusText})`
+  } catch {
+    try {
+      const errorText = await response.text()
+      if (errorText && errorText.trim()) {
+        return errorText
+      }
+      return `${defaultMessage} (Status: ${response.status} ${response.statusText})`
+    } catch {
+      return `${defaultMessage} (Status: ${response.status} ${response.statusText})`
+    }
+  }
+}
+
 export async function getFlockBatches(userId?: string, farmId?: string): Promise<ApiResponse<FlockBatch[]>> {
   try {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
     if (farmId) params.append('farmId', farmId);
     
-    const url = `${API_BASE_URL}/api/MainFlockBatch?${params.toString()}`;
+    const url = `${buildApiUrl('/api/MainFlockBatch')}?${params.toString()}`;
     console.log("[v0] Fetching flock batches:", url);
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
     });
 
     console.log("[v0] Flock batches response status:", response.status);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[v0] Flock batches fetch error:", errorText);
+      const errorMessage = await getErrorMessage(response, "Failed to fetch flock batches");
+      console.error("[v0] Flock batches fetch error:", errorMessage);
       return {
         success: false,
-        message: "Failed to fetch flock batches",
+        message: errorMessage,
         data: [],
       };
     }
@@ -79,26 +104,22 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
       params.append('userId', userId);
       params.append('farmId', farmId);
   
-      const url = `${API_BASE_URL}/api/MainFlockBatch/${batchId}?${params.toString()}`;
+      const url = `${buildApiUrl(`/api/MainFlockBatch/${batchId}`)}?${params.toString()}`;
       console.log("[v0] Deleting flock batch:", url);
   
       const response = await fetch(url, {
         method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        mode: 'cors',
+        headers: getAuthHeaders(),
       });
   
       console.log("[v0] Flock batch delete response status:", response.status);
   
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[v0] Flock batch delete error:", errorText);
+        const errorMessage = await getErrorMessage(response, "Failed to delete flock batch");
+        console.error("[v0] Flock batch delete error:", errorMessage);
         return {
           success: false,
-          message: "Failed to delete flock batch",
+          message: errorMessage,
         };
       }
   
@@ -127,27 +148,23 @@ export interface FlockBatchInput {
 
 export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<ApiResponse<FlockBatch>> {
   try {
-    const url = `${API_BASE_URL}/api/MainFlockBatch`;
+    const url = buildApiUrl('/api/MainFlockBatch');
     console.log("[v0] Creating flock batch:", url, flockBatch);
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
       body: JSON.stringify(flockBatch),
     });
 
     console.log("[v0] Flock batch creation response status:", response.status);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[v0] Flock batch creation error:", errorText);
+      const errorMessage = await getErrorMessage(response, "Failed to create flock batch");
+      console.error("[v0] Flock batch creation error:", errorMessage);
       return {
         success: false,
-        message: "Failed to create flock batch",
+        message: errorMessage,
       };
     }
 
@@ -174,26 +191,22 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
         params.append('userId', userId);
         params.append('farmId', farmId);
     
-        const url = `${API_BASE_URL}/api/MainFlockBatch/${id}?${params.toString()}`;
+        const url = `${buildApiUrl(`/api/MainFlockBatch/${id}`)}?${params.toString()}`;
         console.log("[v0] Fetching flock batch:", url);
     
         const response = await fetch(url, {
           method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          mode: 'cors',
+          headers: getAuthHeaders(),
         });
     
         console.log("[v0] Flock batch fetch response status:", response.status);
     
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("[v0] Flock batch fetch error:", errorText);
+          const errorMessage = await getErrorMessage(response, "Failed to fetch flock batch");
+          console.error("[v0] Flock batch fetch error:", errorMessage);
           return {
             success: false,
-            message: "Failed to fetch flock batch",
+            message: errorMessage,
           };
         }
     
@@ -216,27 +229,23 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
     
     export async function updateFlockBatch(id: number, flockBatch: Partial<FlockBatchInput>): Promise<ApiResponse> {
       try {
-        const url = `${API_BASE_URL}/api/MainFlockBatch/${id}`;
+        const url = buildApiUrl(`/api/MainFlockBatch/${id}`);
         console.log("[v0] Updating flock batch:", url, flockBatch);
     
         const response = await fetch(url, {
           method: "PUT",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          mode: 'cors',
+          headers: getAuthHeaders(),
           body: JSON.stringify(flockBatch),
         });
     
         console.log("[v0] Flock batch update response status:", response.status);
     
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("[v0] Flock batch update error:", errorText);
+          const errorMessage = await getErrorMessage(response, "Failed to update flock batch");
+          console.error("[v0] Flock batch update error:", errorMessage);
           return {
             success: false,
-            message: "Failed to update flock batch",
+            message: errorMessage,
           };
         }
     

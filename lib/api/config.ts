@@ -4,7 +4,40 @@ function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
   return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
 }
 
-const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+// Direct API base URL (for server-side use)
+const DIRECT_API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+
+// Check if we should use proxy (browser) or direct URL (server)
+const IS_BROWSER = typeof window !== 'undefined'
+
+// Get the API base URL - use proxy in browser to avoid CORS, direct URL in server
+function getApiBaseUrl(): string {
+  // In the browser, use the Next.js proxy route to avoid CORS issues
+  if (IS_BROWSER) {
+    return '/api/proxy'
+  }
+  // On the server, use the direct API URL
+  return DIRECT_API_BASE_URL
+}
+
+const API_BASE_URL = getApiBaseUrl()
+
+// Helper function to construct API URLs correctly
+// When using proxy: /api/proxy/MainFlockBatch (no /api/ prefix needed)
+// When using direct: https://farmapi.techretainer.com/api/MainFlockBatch
+export function buildApiUrl(endpoint: string): string {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  
+  if (IS_BROWSER) {
+    // Using proxy - remove /api/ prefix from endpoint if present
+    const proxyPath = cleanEndpoint.replace(/^\/api\//, '/')
+    return `${API_BASE_URL}${proxyPath}`
+  } else {
+    // Using direct URL - ensure /api/ prefix is present
+    const apiPath = cleanEndpoint.startsWith('/api/') ? cleanEndpoint : `/api${cleanEndpoint}`
+    return `${API_BASE_URL}${apiPath}`
+  }
+}
 
 // Log the configuration on load (only in browser)
 if (typeof window !== "undefined") {
@@ -16,7 +49,10 @@ if (typeof window !== "undefined") {
 export { API_BASE_URL }
 
 export function getApiUrl(path: string): string {
-  const url = `${API_BASE_URL}${path}`
+  // If using proxy (browser), path should start with /api/... which we'll append directly
+  // If using direct URL (server), we need to ensure the path starts with /api/...
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const url = `${API_BASE_URL}${cleanPath}`
   console.log("[v0] Constructed API URL:", url)
   return url
 }
