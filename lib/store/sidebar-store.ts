@@ -16,7 +16,14 @@ export const useSidebarStore = create<SidebarState>()(
       isCollapsed: false,
       isMobileOpen: false,
       toggle: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
-      toggleMobile: () => set((state) => ({ isMobileOpen: !state.isMobileOpen })),
+      toggleMobile: () => {
+        console.log('[SidebarStore] toggleMobile called')
+        set((state) => {
+          const newState = { isMobileOpen: !state.isMobileOpen }
+          console.log('[SidebarStore] New state:', newState)
+          return newState
+        })
+      },
       setCollapsed: (collapsed: boolean) => set({ isCollapsed: collapsed }),
       setMobileOpen: (open: boolean) => set({ isMobileOpen: open }),
     }),

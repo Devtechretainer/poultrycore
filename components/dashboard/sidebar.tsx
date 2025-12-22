@@ -63,10 +63,8 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
 
   // Debug: Log mobile sidebar state changes
   useEffect(() => {
-    if (isMobile) {
-      console.log('[Sidebar] Mobile sidebar state changed:', { isMobileOpen, isMobile })
-    }
-  }, [isMobileOpen, isMobile])
+    console.log('[Sidebar] State:', { isMobileOpen, isMobile, isCollapsed })
+  }, [isMobileOpen, isMobile, isCollapsed])
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -373,7 +371,8 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
         {/* Overlay */}
         {isMobileOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+            className="fixed inset-0 bg-black/50 transition-opacity duration-300"
+            style={{ zIndex: 9998 }}
             onClick={() => {
               console.log('[Sidebar] Overlay clicked, toggling mobile sidebar')
               toggleMobile()
@@ -385,9 +384,14 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
         {/* Mobile Sidebar */}
         <div
           className={cn(
-            "fixed top-0 left-0 h-full w-64 flex flex-col bg-slate-900 z-50 transition-transform duration-300 ease-in-out",
+            "fixed top-0 left-0 h-full w-64 flex flex-col bg-slate-900 transition-transform duration-300 ease-in-out",
             isMobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
+          style={{
+            zIndex: 9999,
+            transform: isMobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+            willChange: 'transform',
+          }}
         >
           {sidebarContent}
         </div>
