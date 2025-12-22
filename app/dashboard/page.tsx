@@ -83,16 +83,16 @@ export default function DashboardPage() {
   return (
     <>
       <div className="flex h-screen bg-slate-100">
-        {/* Sidebar */}
+        {/* Sidebar - hidden on mobile, shown as overlay */}
         <DashboardSidebar onLogout={handleLogout} />
         
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content - full width on mobile */}
+        <div className="flex-1 flex flex-col overflow-hidden w-full lg:w-auto">
           {/* Header */}
           <DashboardHeader />
           
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="space-y-6">
               {/* Metrics Cards */}
               <MetricsCards />

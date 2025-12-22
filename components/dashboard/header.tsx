@@ -27,18 +27,16 @@ export function DashboardHeader() {
   return (
     <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-4">
       <div className="flex items-center justify-between gap-4">
-        {/* Hamburger Menu Button (Mobile) */}
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMobile}
-            className="text-slate-300 hover:text-white hover:bg-slate-800 lg:hidden"
-            aria-label="Toggle sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        )}
+        {/* Hamburger Menu Button (Mobile) - Always show on mobile using Tailwind */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMobile}
+          className="text-slate-300 hover:text-white hover:bg-slate-800 lg:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
 
         {/* Search */}
         <div className="flex-1 max-w-md">

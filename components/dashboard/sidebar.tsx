@@ -359,20 +359,20 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
     </>
   )
 
-  // Mobile sidebar with overlay
-  if (isMobile) {
-    return (
-      <>
+  return (
+    <>
+      {/* Mobile sidebar with overlay - hidden on desktop */}
+      <div className="lg:hidden">
         {/* Overlay */}
         {isMobileOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300"
+            className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
             onClick={toggleMobile}
             aria-hidden="true"
           />
         )}
         
-        {/* Sidebar */}
+        {/* Mobile Sidebar */}
         <div
           className={cn(
             "fixed top-0 left-0 h-full flex flex-col bg-slate-900 z-50 transition-transform duration-300 ease-in-out",
@@ -382,17 +382,15 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
         >
           {sidebarContent}
         </div>
-      </>
-    )
-  }
+      </div>
 
-  // Desktop sidebar
-  return (
-    <div className={cn(
-      "flex h-full flex-col bg-slate-900 transition-all duration-300",
-      isCollapsed ? "w-16" : "w-56"
-    )}>
-      {sidebarContent}
-    </div>
+      {/* Desktop sidebar - hidden on mobile */}
+      <div className={cn(
+        "hidden lg:flex h-full flex-col bg-slate-900 transition-all duration-300",
+        isCollapsed ? "w-16" : "w-56"
+      )}>
+        {sidebarContent}
+      </div>
+    </>
   )
 }
