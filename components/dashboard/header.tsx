@@ -2,13 +2,17 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Users, Bell, User } from "lucide-react"
+import { Search, Users, Bell, User, Menu } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useChatStore } from "@/lib/store/chat-store"
+import { useSidebarStore } from "@/lib/store/sidebar-store"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function DashboardHeader() {
   const unread = useChatStore((s) => s.unreadCount)
   const openChat = useChatStore((s) => s.openChat)
+  const isMobile = useIsMobile()
+  const { toggleMobile } = useSidebarStore()
   const [username, setUsername] = useState("")
   const [roleLabel, setRoleLabel] = useState("")
 
@@ -21,8 +25,21 @@ export function DashboardHeader() {
   }, [])
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-4">
+      <div className="flex items-center justify-between gap-4">
+        {/* Hamburger Menu Button (Mobile) */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobile}
+            className="text-slate-300 hover:text-white hover:bg-slate-800 lg:hidden"
+            aria-label="Toggle sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         {/* Search */}
         <div className="flex-1 max-w-md">
           <div className="relative">
@@ -36,7 +53,7 @@ export function DashboardHeader() {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2 text-slate-300">
             <Users className="h-5 w-5" />
             <div className="hidden sm:flex flex-col leading-tight">

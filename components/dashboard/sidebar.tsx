@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { usePermissions } from "@/hooks/use-permissions"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { 
   BarChart3, 
   Users, 
@@ -48,16 +49,46 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const permissions = usePermissions()
+  const isMobile = useIsMobile()
   const [isPending, startTransition] = useTransition()
   const [productionOpen, setProductionOpen] = useState(true)
   const alerts = useAlertsStore((s: { alerts: AlertItem[]; open: () => void }) => s.alerts)
   const openAlerts = useAlertsStore((s: { alerts: AlertItem[]; open: () => void }) => s.open)
-  const { isCollapsed, toggle } = useSidebarStore()
+  const { isCollapsed, toggle, isMobileOpen, toggleMobile, setMobileOpen } = useSidebarStore()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     main: true,
     system: true,
     admin: true,
   })
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    if (isMobile && isMobileOpen) {
+      setMobileOpen(false)
+    }
+  }, [pathname, isMobile, isMobileOpen, setMobileOpen])
+
+  // Close mobile sidebar on escape key and prevent body scroll when open
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobile && isMobileOpen) {
+        setMobileOpen(false)
+      }
+    }
+    
+    // Prevent body scroll when mobile sidebar is open
+    if (isMobile && isMobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    
+    window.addEventListener('keydown', handleEscape)
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
+  }, [isMobile, isMobileOpen, setMobileOpen])
 
   // Grouped navigation items
   const mainNavigationItems = [
@@ -106,6 +137,12 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
     setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }))
   }
 
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setMobileOpen(false)
+    }
+  }
+
   const renderMenuItem = (item: { href: string; label: string; icon: any; current?: boolean }, isButton = false, onClick?: () => void) => {
     const isActive = pathname === item.href || item.current
     const content = (
@@ -115,12 +152,12 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
             ? "bg-slate-800 text-white"
             : "text-slate-300 hover:bg-slate-800 hover:text-white",
           "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors",
-          isCollapsed ? "justify-center" : ""
+          isCollapsed && !isMobile ? "justify-center" : ""
         )}
       >
         <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-        {!isCollapsed && <span>{item.label}</span>}
-        {isButton && !isCollapsed && alerts.length > 0 && item.label === 'Alerts' && (
+        {(!isCollapsed || isMobile) && <span>{item.label}</span>}
+        {isButton && (!isCollapsed || isMobile) && alerts.length > 0 && item.label === 'Alerts' && (
           <span className="ml-auto inline-flex items-center justify-center min-w-[22px] h-[18px] rounded-full bg-red-600 text-white text-[10px] px-1">
             {alerts.length > 99 ? '99+' : alerts.length}
           </span>
@@ -128,7 +165,7 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
       </div>
     )
 
-    if (isCollapsed) {
+    if (isCollapsed && !isMobile) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -137,7 +174,7 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
                 {content}
               </button>
             ) : (
-              <Link href={item.href} prefetch={true} className="block">
+              <Link href={item.href} prefetch={true} className="block" onClick={handleLinkClick}>
                 {content}
               </Link>
             )}
@@ -159,14 +196,14 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
         {content}
       </button>
     ) : (
-      <Link href={item.href} prefetch={true} className="block">
+      <Link href={item.href} prefetch={true} className="block" onClick={handleLinkClick}>
         {content}
       </Link>
     )
   }
 
   const renderGroup = (title: string, items: typeof mainNavigationItems, groupKey: string) => {
-    if (isCollapsed) {
+    if (isCollapsed && !isMobile) {
       return (
         <li>
           <ul role="list" className="-mx-2 space-y-1">
@@ -215,17 +252,24 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
     )
   }
 
-  return (
-    <div className={cn(
-      "flex h-full flex-col bg-slate-900 transition-all duration-300",
-      isCollapsed ? "w-16" : "w-56"
-    )}>
+  const sidebarContent = (
+    <>
       {/* Logo and Toggle */}
       <div className="flex h-16 shrink-0 items-center px-3 gap-0.5 border-b border-slate-800">
-        {!isCollapsed && (
+        {(!isCollapsed || isMobile) && (
           <InventoryLogo />
         )}
-        {isCollapsed ? (
+        {isMobile ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobile}
+            className="ml-auto text-slate-300 hover:bg-slate-800 hover:text-white"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        ) : isCollapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -284,7 +328,7 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
 
       {/* Logout */}
       <div className="border-t border-slate-800 p-4">
-        {isCollapsed ? (
+        {isCollapsed && !isMobile ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -312,6 +356,43 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
           </Button>
         )}
       </div>
+    </>
+  )
+
+  // Mobile sidebar with overlay
+  if (isMobile) {
+    return (
+      <>
+        {/* Overlay */}
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300"
+            onClick={toggleMobile}
+            aria-hidden="true"
+          />
+        )}
+        
+        {/* Sidebar */}
+        <div
+          className={cn(
+            "fixed top-0 left-0 h-full flex flex-col bg-slate-900 z-50 transition-transform duration-300 ease-in-out",
+            isMobileOpen ? "translate-x-0" : "-translate-x-full",
+            "w-64"
+          )}
+        >
+          {sidebarContent}
+        </div>
+      </>
+    )
+  }
+
+  // Desktop sidebar
+  return (
+    <div className={cn(
+      "flex h-full flex-col bg-slate-900 transition-all duration-300",
+      isCollapsed ? "w-16" : "w-56"
+    )}>
+      {sidebarContent}
     </div>
   )
 }
