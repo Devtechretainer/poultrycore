@@ -68,10 +68,12 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
 
   // Close mobile sidebar when route changes
   useEffect(() => {
-    if (isMobile && isMobileOpen) {
+    if (isMobile) {
       setMobileOpen(false)
     }
-  }, [pathname, isMobile, isMobileOpen, setMobileOpen])
+    // Only run when pathname changes, not when isMobileOpen changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isMobile])
 
   // Close mobile sidebar on escape key and prevent body scroll when open
   useEffect(() => {
