@@ -55,13 +55,6 @@ export default function EmployeesPage() {
       } else {
         const errorMessage = employeesResult.message || "Failed to load employees"
         setError(errorMessage)
-        
-        // Redirect to login if session expired
-        if (errorMessage.includes("session has expired") || errorMessage.includes("Please log in")) {
-          setTimeout(() => {
-            handleLogout()
-          }, 2000)
-        }
       }
 
       if (todayLoginsResult.success && todayLoginsResult.data) {
