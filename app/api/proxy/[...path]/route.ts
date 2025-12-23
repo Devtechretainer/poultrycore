@@ -3,9 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 // Proxy API route to handle CORS issues by forwarding requests from the client
 // to the backend API server-side
 
-function getApiBaseUrl(): string {
-  // Get the API base URL from environment variable
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'farmapi.techretainer.com'
+function getApiBaseUrl(pathSegments: string[]): string {
+  // Check if this is an admin API request (path starts with "Admin")
+  const isAdminApi = pathSegments[0] === 'Admin'
+  
+  // Get the appropriate API base URL from environment variable
+  const apiBase = isAdminApi 
+    ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com')
+    : (process.env.NEXT_PUBLIC_API_BASE_URL || 'farmapi.techretainer.com')
+  
   // Ensure it has https:// prefix if not already present
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
     return apiBase
@@ -59,7 +65,7 @@ async function handleRequest(
   method: string
 ) {
   try {
-    const apiBaseUrl = getApiBaseUrl()
+    const apiBaseUrl = getApiBaseUrl(pathSegments)
     const path = pathSegments.join('/')
     
     // Get the full URL with query parameters
@@ -91,8 +97,8 @@ async function handleRequest(
     }
 
     // Forward the request to the backend API
-    console.log('[Proxy API] Forwarding request to:', targetUrl)
-    console.log('[Proxy API] Request method:', method)
+    const isAdminApi = pathSegments[0] === 'Admin'
+    console.log(`[Proxy API] ${isAdminApi ? 'Admin' : 'Main'} API - Forwarding ${method} request to:`, targetUrl)
     console.log('[Proxy API] Request headers:', Object.fromEntries(headers.entries()))
     
     const response = await fetch(targetUrl, fetchOptions)

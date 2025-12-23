@@ -1,7 +1,23 @@
 // Admin API uses different port than other APIs
 import { getAuthHeaders } from './config'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+// Helper function to build admin API URLs
+// Uses proxy in browser to avoid CORS, direct URL on server
+function buildAdminApiUrl(endpoint: string): string {
+  const IS_BROWSER = typeof window !== 'undefined'
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  
+  if (IS_BROWSER) {
+    // Using proxy - endpoint should be Admin/... (no /api/ prefix)
+    const proxyPath = cleanEndpoint.replace(/^\/api\//, '/')
+    return `/api/proxy${proxyPath}`
+  } else {
+    // Server-side: use direct URL
+    const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+    const apiPath = cleanEndpoint.startsWith('/api/') ? cleanEndpoint : `/api${cleanEndpoint}`
+    return `${adminApiUrl}${apiPath}`
+  }
+}
 
 export interface Employee {
   id: string
@@ -77,7 +93,7 @@ const mockEmployees: Employee[] = [
 // Get all employees
 export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees`
+    const url = buildAdminApiUrl('/Admin/employees')
     console.log("[Admin API] Fetching employees:", url)
     
     // Log token presence for debugging
@@ -159,7 +175,7 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
     if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       return {
         success: false,
-        message: `Unable to connect to the Admin API at ${API_BASE_URL}. Please ensure the server is running and CORS is configured to allow requests from your frontend domain.`,
+        message: `Unable to connect to the Admin API. Please ensure the server is running and accessible.`,
       }
     }
     
@@ -173,7 +189,7 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
 // Get employee count
 export async function getEmployeeCount(): Promise<ApiResponse<number>> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees/count`
+    const url = buildAdminApiUrl('/Admin/employees/count')
     console.log("[Admin API] Fetching employee count:", url)
 
     const response = await fetch(url, {
@@ -208,7 +224,7 @@ export async function getEmployeeCount(): Promise<ApiResponse<number>> {
 // Get single employee by ID
 export async function getEmployee(id: string): Promise<ApiResponse<Employee>> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees/${id}`
+    const url = buildAdminApiUrl(`/Admin/employees/${id}`)
     console.log("[Admin API] Fetching employee:", url)
 
     const response = await fetch(url, {
@@ -243,7 +259,7 @@ export async function getEmployee(id: string): Promise<ApiResponse<Employee>> {
 // Create new employee (staff member)
 export async function createEmployee(employee: CreateEmployeeData): Promise<ApiResponse<Employee>> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees`
+    const url = buildAdminApiUrl('/Admin/employees')
     console.log("[Admin API] Creating employee:", url)
 
     // Match the API request body structure exactly
@@ -344,7 +360,7 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
 // Update employee
 export async function updateEmployee(id: string, data: UpdateEmployeeData): Promise<ApiResponse> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees/${id}`
+    const url = buildAdminApiUrl(`/Admin/employees/${id}`)
     console.log("[Admin API] Updating employee:", url)
 
     const response = await fetch(url, {
@@ -378,7 +394,7 @@ export async function updateEmployee(id: string, data: UpdateEmployeeData): Prom
 // Delete employee
 export async function deleteEmployee(id: string): Promise<ApiResponse> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees/${id}`
+    const url = buildAdminApiUrl(`/Admin/employees/${id}`)
     console.log("[Admin API] Deleting employee:", url)
 
     const response = await fetch(url, {
@@ -411,7 +427,7 @@ export async function deleteEmployee(id: string): Promise<ApiResponse> {
 // Get employees who logged in today
 export async function getTodayLogins(): Promise<ApiResponse<Employee[]>> {
   try {
-    const url = `${API_BASE_URL}/api/Admin/employees/today-logins`
+    const url = buildAdminApiUrl('/Admin/employees/today-logins')
     const headers = getAuthHeaders()
     
     console.log("[Admin API] Fetching today's logins from:", url)
