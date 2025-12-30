@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { UserCog, User, Mail, Phone, Lock, Shield } from "lucide-react"
+import { UserCog, User, Mail, Phone, Lock } from "lucide-react"
 import { createEmployee, type CreateEmployeeData } from "@/lib/api"
 import { getUserContext } from "@/lib/utils/user-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -148,20 +148,12 @@ export default function NewEmployeePage() {
               </div>
             </div>
 
-            {/* Error Alert */}
+            {/* Error Alert - Only shows when there's a real error */}
             {error && (
               <Alert variant="destructive" className="border-red-200 bg-red-50">
                 <AlertDescription className="text-red-800">{error}</AlertDescription>
               </Alert>
             )}
-
-            {/* Info Alert */}
-            <Alert className="border-blue-200 bg-blue-50">
-              <Shield className="w-4 h-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                Employees will have access to view, create, and edit records, but cannot delete data.
-              </AlertDescription>
-            </Alert>
 
             {/* Form Card */}
             <Card className="border-0 shadow-xl bg-white">
