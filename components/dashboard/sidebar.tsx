@@ -103,6 +103,7 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
     { href: "/customers", label: "Customers", icon: Users },
     { href: "/flock-batch", label: "Flock Batch", icon: Bird },
     { href: "/flocks", label: "Flocks", icon: Bird },
+    { href: "/houses", label: "Houses", icon: Building2 },
   ]
 
   const productionNavigationItems = [
@@ -129,7 +130,6 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
   const systemNavigationItems = [
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/profile", label: "Account", icon: User },
-    { href: "/houses", label: "Houses", icon: Building2 },
     { href: "#", label: "Alerts", icon: Bell },
     { href: "/audit-logs", label: "Audit Logs", icon: ListTodo },
     { href: "/settings", label: "Settings", icon: Settings },

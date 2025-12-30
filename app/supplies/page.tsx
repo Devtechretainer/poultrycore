@@ -62,6 +62,25 @@ export default function SuppliesPage() {
 
   useEffect(() => {
     loadData()
+    
+    // Check for global search query from header
+    if (typeof window !== 'undefined') {
+      const globalSearch = sessionStorage.getItem('globalSearchQuery')
+      if (globalSearch) {
+        setSearch(globalSearch)
+        sessionStorage.removeItem('globalSearchQuery')
+      }
+      
+      // Listen for global search events from header
+      const handleGlobalSearch = (e: CustomEvent) => {
+        setSearch(e.detail.query)
+      }
+      
+      window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      return () => {
+        window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
+      }
+    }
   }, [])
 
   const loadData = async () => {

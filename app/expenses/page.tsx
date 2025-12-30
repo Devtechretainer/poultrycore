@@ -35,6 +35,25 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     loadExpenses()
+    
+    // Check for global search query from header
+    if (typeof window !== 'undefined') {
+      const globalSearch = sessionStorage.getItem('globalSearchQuery')
+      if (globalSearch) {
+        setSearchQuery(globalSearch)
+        sessionStorage.removeItem('globalSearchQuery')
+      }
+      
+      // Listen for global search events from header
+      const handleGlobalSearch = (e: CustomEvent) => {
+        setSearchQuery(e.detail.query)
+      }
+      
+      window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      return () => {
+        window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
+      }
+    }
   }, [])
 
   const loadExpenses = async () => {

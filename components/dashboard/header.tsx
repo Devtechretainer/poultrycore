@@ -27,27 +27,109 @@ export function DashboardHeader() {
     setRoleLabel(isStaff ? 'Staff' : 'Admin')
   }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery.trim()) return
+  // Define all available pages for navigation
+  const pageRoutes = [
+    { path: '/dashboard', keywords: ['overview', 'dashboard', 'home', 'main'] },
+    { path: '/customers', keywords: ['customers', 'customer', 'client'] },
+    { path: '/flocks', keywords: ['flocks', 'flock', 'birds', 'chicken'] },
+    { path: '/flock-batch', keywords: ['flock batch', 'batch', 'batches'] },
+    { path: '/employees', keywords: ['employees', 'employee', 'staff', 'workers'] },
+    { path: '/sales', keywords: ['sales', 'sale', 'sell', 'revenue'] },
+    { path: '/expenses', keywords: ['expenses', 'expense', 'cost', 'spending'] },
+    { path: '/inventory', keywords: ['inventory', 'stock', 'items'] },
+    { path: '/supplies', keywords: ['supplies', 'supply', 'materials'] },
+    { path: '/production-records', keywords: ['production', 'records', 'production records'] },
+    { path: '/egg-production', keywords: ['egg production', 'eggs', 'egg'] },
+    { path: '/feed-usage', keywords: ['feed usage', 'feed', 'feeding'] },
+    { path: '/health', keywords: ['health', 'vaccination', 'medication'] },
+    { path: '/houses', keywords: ['houses', 'house', 'poultry house'] },
+    { path: '/reports', keywords: ['reports', 'report', 'analytics'] },
+    { path: '/profile', keywords: ['profile', 'account', 'user', 'settings'] },
+    { path: '/audit-logs', keywords: ['audit logs', 'audit', 'logs', 'activity'] },
+    { path: '/settings', keywords: ['settings', 'configuration', 'config'] },
+    { path: '/resources', keywords: ['resources', 'resource', 'help'] },
+  ]
+
+  const findMatchingPage = (query: string): string | null => {
+    const lowerQuery = query.toLowerCase().trim()
+    if (!lowerQuery) return null
     
-    // Store search query in sessionStorage for use across pages
+    // Exact match first
+    for (const route of pageRoutes) {
+      if (route.path === lowerQuery || route.path === `/${lowerQuery}`) {
+        return route.path
+      }
+    }
+    
+    // Keyword match
+    for (const route of pageRoutes) {
+      for (const keyword of route.keywords) {
+        if (lowerQuery.includes(keyword) || keyword.includes(lowerQuery)) {
+          return route.path
+        }
+      }
+    }
+    
+    return null
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    
+    // Work in real-time - dispatch search event immediately as user types
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('globalSearchQuery', searchQuery.trim())
-      
       const currentPath = window.location.pathname
       
-      // If already on a list page, trigger a custom event that pages can listen to
+      // If already on a list page, trigger search immediately for data filtering
       if (currentPath.includes('/employees') || 
           currentPath.includes('/customers') || 
           currentPath.includes('/flocks') ||
           currentPath.includes('/sales') ||
           currentPath.includes('/inventory') ||
-          currentPath.includes('/expenses')) {
-        // Dispatch event for pages to listen to
-        window.dispatchEvent(new CustomEvent('globalSearch', { detail: { query: searchQuery.trim() } }))
+          currentPath.includes('/expenses') ||
+          currentPath.includes('/supplies') ||
+          currentPath.includes('/health') ||
+          currentPath.includes('/audit-logs')) {
+        // Dispatch event for pages to listen to in real-time
+        window.dispatchEvent(new CustomEvent('globalSearch', { detail: { query: value.trim() } }))
+      }
+      
+      // Store in sessionStorage for navigation between pages
+      if (value.trim()) {
+        sessionStorage.setItem('globalSearchQuery', value.trim())
       } else {
-        // Navigate to dashboard - user can navigate to specific pages
+        sessionStorage.removeItem('globalSearchQuery')
+      }
+    }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchQuery.trim()) return
+    
+    const matchingPage = findMatchingPage(searchQuery)
+    
+    if (matchingPage) {
+      // Navigate to the matching page
+      router.push(matchingPage)
+      setSearchQuery("") // Clear search after navigation
+      sessionStorage.removeItem('globalSearchQuery')
+    } else {
+      // If no page match, check if we're on a searchable page and filter data
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+      
+      if (currentPath.includes('/employees') || 
+          currentPath.includes('/customers') || 
+          currentPath.includes('/flocks') ||
+          currentPath.includes('/sales') ||
+          currentPath.includes('/inventory') ||
+          currentPath.includes('/expenses') ||
+          currentPath.includes('/supplies') ||
+          currentPath.includes('/health') ||
+          currentPath.includes('/audit-logs')) {
+        // Already filtering on current page, do nothing
+      } else {
+        // Navigate to dashboard if no match
         router.push('/dashboard')
       }
     }
@@ -78,7 +160,12 @@ export function DashboardHeader() {
               type="text"
               placeholder="Search customers, flocks, sales..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  handleSearchChange('')
+                }
+              }}
               className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-600"
             />
           </div>
