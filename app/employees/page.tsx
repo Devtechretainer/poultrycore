@@ -8,13 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { Plus, Pencil, Trash2, Mail, Phone, UserCog, Users, Calendar, LogIn } from "lucide-react"
+import { Plus, Pencil, Trash2, Mail, Phone, UserCog, Users, Calendar, LogIn, Search, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { getEmployees, deleteEmployee, getTodayLogins, type Employee } from "@/lib/api/admin"
 import { getUserContext } from "@/lib/utils/user-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { usePermissions } from "@/hooks/use-permissions"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { useMemo } from "react"
 
 export default function EmployeesPage() {
   const router = useRouter()
@@ -25,6 +27,7 @@ export default function EmployeesPage() {
   const [error, setError] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     // Wait for permissions to load
@@ -39,6 +42,26 @@ export default function EmployeesPage() {
     }
     
     loadEmployees()
+    
+    // Check for global search query from header
+    if (typeof window !== 'undefined') {
+      const globalSearch = sessionStorage.getItem('globalSearchQuery')
+      if (globalSearch) {
+        setSearchQuery(globalSearch)
+        sessionStorage.removeItem('globalSearchQuery') // Clear after using
+      }
+      
+      // Listen for global search events from header
+      const handleGlobalSearch = (e: CustomEvent) => {
+        setSearchQuery(e.detail.query)
+        setCurrentPage(1)
+      }
+      
+      window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      return () => {
+        window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
+      }
+    }
   }, [permissions.isAdmin, permissions.isLoading])
 
   const loadEmployees = async () => {
@@ -97,11 +120,33 @@ export default function EmployeesPage() {
     router.push("/login")
   }
 
+  // Filter employees based on search query
+  const filteredEmployees = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return employees
+    }
+    
+    const query = searchQuery.toLowerCase()
+    return employees.filter(employee => 
+      (employee.firstName || '').toLowerCase().includes(query) ||
+      (employee.lastName || '').toLowerCase().includes(query) ||
+      (employee.userName || '').toLowerCase().includes(query) ||
+      (employee.email || '').toLowerCase().includes(query) ||
+      (employee.phoneNumber || '').toLowerCase().includes(query) ||
+      `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(query)
+    )
+  }, [employees, searchQuery])
+
   // Pagination logic
-  const totalPages = Math.ceil(employees.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentEmployees = employees.slice(startIndex, endIndex)
+  const currentEmployees = filteredEmployees.slice(startIndex, endIndex)
+
+  const clearFilters = () => {
+    setSearchQuery("")
+    setCurrentPage(1)
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -209,6 +254,30 @@ export default function EmployeesPage() {
               </Alert>
             )}
 
+            {/* Search and Filter */}
+            {!loading && employees.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-lg border">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input 
+                    placeholder="Search by name, username, email, or phone..." 
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setCurrentPage(1) // Reset to first page when searching
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+                {searchQuery && (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Today's Logins */}
             {todayLogins.length > 0 && (
               <Card className="bg-white border-l-4 border-l-green-500">
@@ -250,6 +319,32 @@ export default function EmployeesPage() {
               <Card className="bg-white">
                 <CardContent className="py-12 text-center">
                   <p className="text-slate-600">Loading employees...</p>
+                </CardContent>
+              </Card>
+            ) : filteredEmployees.length === 0 ? (
+              <Card className="bg-white">
+                <CardContent className="py-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No employees found</h3>
+                  <p className="text-slate-600 mb-6">
+                    {searchQuery ? `No employees match "${searchQuery}"` : "Get started by adding your first employee"}
+                  </p>
+                  {!searchQuery && (
+                    <Link href="/employees/new" prefetch={true}>
+                      <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                        <Plus className="w-4 h-4" />
+                        Add Your First Employee
+                      </Button>
+                    </Link>
+                  )}
+                  {searchQuery && (
+                    <Button className="gap-2" variant="outline" onClick={clearFilters}>
+                      <RefreshCw className="w-4 h-4" />
+                      Clear Search
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : employees.length === 0 ? (
@@ -357,10 +452,10 @@ export default function EmployeesPage() {
             )}
             
             {/* Pagination */}
-            {!loading && employees.length > 0 && totalPages > 1 && (
+            {!loading && filteredEmployees.length > 0 && totalPages > 1 && (
               <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-slate-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, employees.length)} of {employees.length} employees
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredEmployees.length)} of {filteredEmployees.length} {searchQuery ? 'filtered ' : ''}employees
                 </div>
                 <Pagination>
                   <PaginationContent>

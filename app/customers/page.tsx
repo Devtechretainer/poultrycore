@@ -8,12 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { Plus, Pencil, Trash2, Mail, Phone, MapPin, Users } from "lucide-react"
+import { Plus, Pencil, Trash2, Mail, Phone, MapPin, Users, Search, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { getCustomers, deleteCustomer, type Customer } from "@/lib/api/customer"
 import { getUserContext } from "@/lib/utils/user-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { usePermissions } from "@/hooks/use-permissions"
+import { Input } from "@/components/ui/input"
+import { useMemo } from "react"
 
 export default function CustomersPage() {
   const router = useRouter()
@@ -23,9 +25,30 @@ export default function CustomersPage() {
   const [error, setError] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     loadCustomers()
+    
+    // Check for global search query from header
+    if (typeof window !== 'undefined') {
+      const globalSearch = sessionStorage.getItem('globalSearchQuery')
+      if (globalSearch) {
+        setSearchQuery(globalSearch)
+        sessionStorage.removeItem('globalSearchQuery') // Clear after using
+      }
+      
+      // Listen for global search events from header
+      const handleGlobalSearch = (e: CustomEvent) => {
+        setSearchQuery(e.detail.query)
+        setCurrentPage(1)
+      }
+      
+      window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      return () => {
+        window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
+      }
+    }
   }, [])
 
   const loadCustomers = async () => {
@@ -76,11 +99,32 @@ export default function CustomersPage() {
     router.push("/login")
   }
 
+  // Filter customers based on search query
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return customers
+    }
+    
+    const query = searchQuery.toLowerCase()
+    return customers.filter(customer => 
+      (customer.name || '').toLowerCase().includes(query) ||
+      (customer.contactEmail || '').toLowerCase().includes(query) ||
+      (customer.contactPhone || '').toLowerCase().includes(query) ||
+      (customer.city || '').toLowerCase().includes(query) ||
+      (customer.address || '').toLowerCase().includes(query)
+    )
+  }, [customers, searchQuery])
+
   // Pagination logic
-  const totalPages = Math.ceil(customers.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentCustomers = customers.slice(startIndex, endIndex)
+  const currentCustomers = filteredCustomers.slice(startIndex, endIndex)
+
+  const clearFilters = () => {
+    setSearchQuery("")
+    setCurrentPage(1)
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -173,11 +217,61 @@ export default function CustomersPage() {
               </Alert>
             )}
 
+            {/* Search and Filter */}
+            {!loading && customers.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-lg border">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input 
+                    placeholder="Search by name, email, phone, city, or address..." 
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setCurrentPage(1) // Reset to first page when searching
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+                {searchQuery && (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Content */}
             {loading ? (
               <Card className="bg-white">
                 <CardContent className="py-12 text-center">
                   <p className="text-slate-600">Loading customers...</p>
+                </CardContent>
+              </Card>
+            ) : filteredCustomers.length === 0 ? (
+              <Card className="bg-white">
+                <CardContent className="py-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No customers found</h3>
+                  <p className="text-slate-600 mb-6">
+                    {searchQuery ? `No customers match "${searchQuery}"` : "Get started by adding your first customer"}
+                  </p>
+                  {!searchQuery && (
+                    <Link href="/customers/new" prefetch={true}>
+                      <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                        <Plus className="w-4 h-4" />
+                        Add Your First Customer
+                      </Button>
+                    </Link>
+                  )}
+                  {searchQuery && (
+                    <Button className="gap-2" variant="outline" onClick={clearFilters}>
+                      <RefreshCw className="w-4 h-4" />
+                      Clear Search
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : customers.length === 0 ? (
@@ -273,10 +367,10 @@ export default function CustomersPage() {
             )}
             
             {/* Pagination */}
-            {!loading && customers.length > 0 && totalPages > 1 && (
+            {!loading && filteredCustomers.length > 0 && totalPages > 1 && (
               <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-slate-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, customers.length)} of {customers.length} customers
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length} {searchQuery ? 'filtered ' : ''}customers
                 </div>
                 <Pagination>
                   <PaginationContent>

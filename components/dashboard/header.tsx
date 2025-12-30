@@ -34,11 +34,23 @@ export function DashboardHeader() {
     // Store search query in sessionStorage for use across pages
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('globalSearchQuery', searchQuery.trim())
+      
+      const currentPath = window.location.pathname
+      
+      // If already on a list page, trigger a custom event that pages can listen to
+      if (currentPath.includes('/employees') || 
+          currentPath.includes('/customers') || 
+          currentPath.includes('/flocks') ||
+          currentPath.includes('/sales') ||
+          currentPath.includes('/inventory') ||
+          currentPath.includes('/expenses')) {
+        // Dispatch event for pages to listen to
+        window.dispatchEvent(new CustomEvent('globalSearch', { detail: { query: searchQuery.trim() } }))
+      } else {
+        // Navigate to dashboard - user can navigate to specific pages
+        router.push('/dashboard')
+      }
     }
-    
-    // Navigate to a search results page or perform search
-    // For now, we'll navigate to dashboard and let pages handle the search
-    router.push('/dashboard')
   }
 
   return (

@@ -60,6 +60,26 @@ export default function FlocksPage() {
   useEffect(() => {
     loadFlocks()
     loadFilterData()
+    
+    // Check for global search query from header
+    if (typeof window !== 'undefined') {
+      const globalSearch = sessionStorage.getItem('globalSearchQuery')
+      if (globalSearch) {
+        setSearch(globalSearch)
+        sessionStorage.removeItem('globalSearchQuery') // Clear after using
+      }
+      
+      // Listen for global search events from header
+      const handleGlobalSearch = (e: CustomEvent) => {
+        setSearch(e.detail.query)
+        setCurrentPage(1)
+      }
+      
+      window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      return () => {
+        window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
+      }
+    }
   }, [])
 
   const loadFilterData = async () => {
