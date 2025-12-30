@@ -180,37 +180,37 @@ export function MetricsCards() {
 
   const salesMetrics = calculateSalesMetrics()
 
-  // Calculate percentage changes (mock calculations for now)
+  // Calculate metrics without percentage changes
   const metrics = [
     {
       title: "TOTAL CUSTOMERS",
       value: safeValue(summary.totalCustomers).toLocaleString(),
-      change: "↑ 12% Since last month",
-      changeType: "increase" as const,
+      change: "Total registered customers",
+      changeType: "neutral" as const,
       icon: Users,
       iconColor: "bg-blue-500"
     },
     {
       title: "TOTAL PRODUCTION",
       value: safeValue(summary.totalProduction).toLocaleString(),
-      change: "↑ 8% Since last month",
-      changeType: "increase" as const,
+      change: "Overall production count",
+      changeType: "neutral" as const,
       icon: Activity,
       iconColor: "bg-green-500"
     },
     {
       title: "TOTAL EGGS",
       value: safeValue(summary.totalEggs).toLocaleString(),
-      change: "↑ 15% Since last month",
-      changeType: "increase" as const,
+      change: "Total eggs produced",
+      changeType: "neutral" as const,
       icon: Egg,
       iconColor: "bg-orange-500"
     },
     {
       title: "ACTIVE FLOCKS",
       value: safeValue(summary.activeFlocks).toString(),
-      change: "↑ 2 Since last month",
-      changeType: "increase" as const,
+      change: "Currently active flocks",
+      changeType: "neutral" as const,
       icon: Bird,
       iconColor: "bg-purple-500"
     }
@@ -238,24 +238,24 @@ export function MetricsCards() {
         <MetricCard
           title="THIS MONTH SALES"
           value={formatCurrency(salesMetrics.thisMonthSales)}
-          change="↑ 18% Since last month"
-          changeType="increase"
+          change="Sales for current month"
+          changeType="neutral"
           icon={TrendingUp}
           iconColor="bg-blue-600"
         />
         <MetricCard
           title="AVERAGE SALE"
           value={formatCurrency(salesMetrics.averageSale)}
-          change="↑ 5% Since last month"
-          changeType="increase"
+          change="Average transaction value"
+          changeType="neutral"
           icon={Package}
           iconColor="bg-purple-500"
         />
         <MetricCard
           title="PRODUCTION EFFICIENCY"
           value={`${safeValue(summary.productionEfficiency).toFixed(1)}%`}
-          change="↑ 2.1% Since last month"
-          changeType="increase"
+          change="Overall efficiency rating"
+          changeType="neutral"
           icon={CheckSquare}
           iconColor="bg-indigo-500"
         />

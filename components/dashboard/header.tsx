@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Users, Bell, User, Menu } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useChatStore } from "@/lib/store/chat-store"
 import { useSidebarStore } from "@/lib/store/sidebar-store"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export function DashboardHeader() {
+  const router = useRouter()
   const unread = useChatStore((s) => s.unreadCount)
   const openChat = useChatStore((s) => s.openChat)
   const isMobile = useIsMobile()
   const { toggleMobile } = useSidebarStore()
   const [username, setUsername] = useState("")
   const [roleLabel, setRoleLabel] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -23,6 +26,20 @@ export function DashboardHeader() {
     setUsername(u)
     setRoleLabel(isStaff ? 'Staff' : 'Admin')
   }, [])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchQuery.trim()) return
+    
+    // Store search query in sessionStorage for use across pages
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('globalSearchQuery', searchQuery.trim())
+    }
+    
+    // Navigate to a search results page or perform search
+    // For now, we'll navigate to dashboard and let pages handle the search
+    router.push('/dashboard')
+  }
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-4">
@@ -42,16 +59,18 @@ export function DashboardHeader() {
         </Button>
 
         {/* Search */}
-        <div className="flex-1 max-w-md">
+        <form onSubmit={handleSearch} className="flex-1 max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search..."
+              placeholder="Search customers, flocks, sales..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-600"
             />
           </div>
-        </div>
+        </form>
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -79,7 +98,13 @@ export function DashboardHeader() {
             </Button>
           </div>
           
-          <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover:bg-slate-800">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-slate-300 hover:text-white hover:bg-slate-800"
+            onClick={() => router.push('/profile')}
+            aria-label="View profile"
+          >
             <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
             </div>
