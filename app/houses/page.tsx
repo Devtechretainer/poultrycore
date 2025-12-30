@@ -174,32 +174,83 @@ export default function HousesPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit House" : "Add House"}</DialogTitle>
-            <DialogDescription>
-              {editing ? "Update house details" : "Add a new poultry house"}
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader className="pb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <Home className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-slate-900">
+                {editing ? "Edit House" : "Add New House"}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-slate-600">
+              {editing ? "Update house details below" : "Enter the house information below"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-5 py-2">
             <div className="space-y-2">
-              <Label htmlFor="name">House Name *</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
+                House Name *
+              </Label>
+              <Input 
+                id="name" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                required 
+                className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                placeholder="House A"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="capacity">Capacity (birds)</Label>
-              <Input id="capacity" type="number" min="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+              <Label htmlFor="capacity" className="text-sm font-semibold text-slate-700">
+                Capacity (birds)
+              </Label>
+              <Input 
+                id="capacity" 
+                type="number" 
+                min="0" 
+                value={capacity} 
+                onChange={(e) => setCapacity(e.target.value)}
+                className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                placeholder="1000"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
+              <Label htmlFor="location" className="text-sm font-semibold text-slate-700">
+                Location
+              </Label>
+              <Input 
+                id="location" 
+                value={location} 
+                onChange={(e) => setLocation(e.target.value)}
+                className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                placeholder="North Wing"
+              />
             </div>
-            <div className="flex gap-2">
-              <Button onClick={submit} disabled={saving} className="flex-1">
-                {saving ? "Saving..." : editing ? "Update" : "Add"}
-              </Button>
-              <Button onClick={() => setDialogOpen(false)} variant="outline">
+            <div className="flex gap-3 pt-4 border-t border-slate-200">
+              <Button 
+                onClick={() => setDialogOpen(false)} 
+                variant="outline"
+                className="flex-1 h-12 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all"
+              >
                 Cancel
+              </Button>
+              <Button 
+                onClick={submit} 
+                disabled={saving} 
+                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 transition-all"
+              >
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Saving...
+                  </span>
+                ) : editing ? (
+                  "Update House"
+                ) : (
+                  "Add House"
+                )}
               </Button>
             </div>
           </div>

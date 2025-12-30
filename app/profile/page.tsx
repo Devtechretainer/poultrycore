@@ -328,7 +328,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Sidebar */}
         <DashboardSidebar onLogout={logout} />
         
@@ -341,30 +341,51 @@ export default function ProfilePage() {
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Page Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-slate-900">User Profile</h1>
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <User className="w-6 h-6 text-white" />
                   </div>
-                  <p className="text-slate-600">View and manage your account information</p>
+                  <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Profile</h1>
+                    <p className="text-slate-600 mt-1">View and manage your account information</p>
+                  </div>
                 </div>
                 {!isEditing ? (
-                  <Button onClick={handleEdit} className="bg-blue-600 hover:bg-blue-700">
+                  <Button 
+                    onClick={handleEdit} 
+                    className="h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 transition-all"
+                  >
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
                 ) : (
-                  <div className="flex gap-2">
-                    <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={handleCancel} 
+                      variant="outline" 
+                      disabled={isSaving}
+                      className="h-12 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all"
+                    >
                       <X className="w-4 h-4 mr-2" />
                       Cancel
                     </Button>
-                    <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
-                      <Save className="w-4 h-4 mr-2" />
-                      {isSaving ? "Saving..." : "Save Changes"}
+                    <Button 
+                      onClick={handleSave} 
+                      className="h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 transition-all" 
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          Saving...
+                        </span>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -372,23 +393,23 @@ export default function ProfilePage() {
 
               {/* Error Alert */}
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+                </Alert>
               )}
 
               {/* Profile Card */}
-              <Card className="bg-white">
-                <CardContent className="p-6 space-y-8">
+              <Card className="border-0 shadow-xl bg-white">
+                <CardContent className="p-8 space-y-8">
                   {/* Personal Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <User className="w-5 h-5 text-blue-600" />
-                      Personal Information
-                    </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Personal Information</h3>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">
+                        <Label htmlFor="firstName" className="text-sm font-semibold text-slate-700">
                           First Name
                         </Label>
                         {isEditing ? (
@@ -396,18 +417,19 @@ export default function ProfilePage() {
                             id="firstName"
                             value={formData.firstName}
                             onChange={(e) => handleInputChange("firstName", e.target.value)}
-                            className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                             disabled={isSaving}
+                            placeholder="John"
                           />
                         ) : (
-                          <p className="h-11 px-3 py-2 bg-slate-50 rounded-lg text-slate-900 flex items-center">
+                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
                             {profile?.firstName || "Not set"}
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">
+                        <Label htmlFor="lastName" className="text-sm font-semibold text-slate-700">
                           Last Name
                         </Label>
                         {isEditing ? (
@@ -415,11 +437,12 @@ export default function ProfilePage() {
                             id="lastName"
                             value={formData.lastName}
                             onChange={(e) => handleInputChange("lastName", e.target.value)}
-                            className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                             disabled={isSaving}
+                            placeholder="Doe"
                           />
                         ) : (
-                          <p className="h-11 px-3 py-2 bg-slate-50 rounded-lg text-slate-900 flex items-center">
+                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
                             {profile?.lastName || "Not set"}
                           </p>
                         )}
@@ -428,14 +451,14 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Contact Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <Mail className="w-5 h-5 text-blue-600" />
-                      Contact Information
-                    </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Contact Information</h3>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
                           Email Address
                         </Label>
                         {isEditing ? (
@@ -444,19 +467,20 @@ export default function ProfilePage() {
                             type="email"
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
-                            className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                             disabled={isSaving}
+                            placeholder="john@example.com"
                           />
                         ) : (
-                          <p className="h-11 px-3 py-2 bg-slate-50 rounded-lg text-slate-900 flex items-center">
+                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
                             {profile?.email || "Not set"}
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="phoneNumber" className="text-sm font-medium text-slate-700">
-                          <Phone className="w-4 h-4 inline mr-1" />
+                        <Label htmlFor="phoneNumber" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-blue-600" />
                           Phone Number
                         </Label>
                         {isEditing ? (
@@ -465,11 +489,12 @@ export default function ProfilePage() {
                             type="tel"
                             value={formData.phoneNumber}
                             onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                            className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                             disabled={isSaving}
+                            placeholder="+1 (555) 123-4567"
                           />
                         ) : (
-                          <p className="h-11 px-3 py-2 bg-slate-50 rounded-lg text-slate-900 flex items-center">
+                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
                             {profile?.phoneNumber || "Not set"}
                           </p>
                         )}
@@ -478,13 +503,13 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Farm Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <Building2 className="w-5 h-5 text-blue-600" />
-                      Farm Information
-                    </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Farm Information</h3>
+                    </div>
                     <div className="space-y-2">
-                      <Label htmlFor="farmName" className="text-sm font-medium text-slate-700">
+                      <Label htmlFor="farmName" className="text-sm font-semibold text-slate-700">
                         Farm Name
                       </Label>
                       {isEditing ? (
@@ -492,11 +517,12 @@ export default function ProfilePage() {
                           id="farmName"
                           value={formData.farmName}
                           onChange={(e) => handleInputChange("farmName", e.target.value)}
-                          className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                          className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                           disabled={isSaving}
+                          placeholder="My Farm"
                         />
                       ) : (
-                        <p className="h-11 px-3 py-2 bg-slate-50 rounded-lg text-slate-900 flex items-center">
+                        <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
                           {profile?.farmName || "Not set"}
                         </p>
                       )}
@@ -504,11 +530,11 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Account Status */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <Shield className="w-5 h-5 text-blue-600" />
-                      Account Status
-                    </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Account Status</h3>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 bg-slate-50 rounded-lg">
                         <p className="text-sm text-slate-600 mb-1">Username</p>
@@ -544,11 +570,11 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Security Settings */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <Lock className="w-5 h-5 text-blue-600" />
-                      Security Settings
-                    </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Security Settings</h3>
+                    </div>
                     <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
