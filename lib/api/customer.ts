@@ -1,9 +1,15 @@
+import { buildApiUrl, getAuthHeaders } from './config'
+
 function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
   const val = raw || fallback
   return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
 }
 
-const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+// For server-side use
+const DIRECT_API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+
+// Check if we should use proxy (browser) or direct URL (server)
+const IS_BROWSER = typeof window !== 'undefined'
 
 export interface Customer {
   farmId: string
@@ -68,22 +74,26 @@ let nextCustomerId = 4
 
 export async function getCustomers(userId: string, farmId: string) {
   try {
-    const url = `${API_BASE_URL}/api/Customer?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    // Use proxy in browser, direct URL on server
+    const endpoint = `/Customer?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Fetching customers:", url)
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     })
 
     console.log("[v0] Customers response status:", response.status)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Customers fetch error:", errorText)
-      console.log("[v0] Using mock data for customers")
+      // Only log detailed errors if not 404 (endpoint might not exist)
+      if (response.status !== 404) {
+        const errorText = await response.text()
+        console.warn("[v0] Customers API error:", response.status, errorText)
+      } else {
+        console.log("[v0] Customer API endpoint not available (404), using mock data")
+      }
       
       // Return mock data when API fails
       return {
@@ -127,14 +137,13 @@ export async function getCustomers(userId: string, farmId: string) {
 
 export async function getCustomer(id: number, userId: string, farmId: string) {
   try {
-    const url = `${API_BASE_URL}/api/Customer/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const endpoint = `/Customer/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Fetching customer:", url)
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     })
 
     if (!response.ok) {
@@ -189,15 +198,13 @@ export async function getCustomer(id: number, userId: string, farmId: string) {
 
 export async function createCustomer(customer: CustomerInput) {
   try {
-    const url = `${API_BASE_URL}/api/Customer`
+    const endpoint = `/Customer`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Creating customer:", url)
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         ...customer,
         customerId: 0,
@@ -249,15 +256,13 @@ export async function createCustomer(customer: CustomerInput) {
 
 export async function updateCustomer(id: number, customer: CustomerInput) {
   try {
-    const url = `${API_BASE_URL}/api/Customer/${id}`
+    const endpoint = `/Customer/${id}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Updating customer:", url)
 
     const response = await fetch(url, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         ...customer,
         customerId: id,
@@ -319,14 +324,13 @@ export async function updateCustomer(id: number, customer: CustomerInput) {
 
 export async function deleteCustomer(id: number, userId: string, farmId: string) {
   try {
-    const url = `${API_BASE_URL}/api/Customer/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const endpoint = `/Customer/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Deleting customer:", url)
 
     const response = await fetch(url, {
       method: "DELETE",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     })
 
     if (!response.ok) {

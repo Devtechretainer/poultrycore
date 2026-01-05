@@ -60,7 +60,7 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
     if (userId) params.append('userId', userId);
     if (farmId) params.append('farmId', farmId);
     
-    const url = `${buildApiUrl('/api/MainFlockBatch')}?${params.toString()}`;
+    const url = `${buildApiUrl('/MainFlockBatch')}?${params.toString()}`;
     console.log("[v0] Fetching flock batches:", url);
 
     const response = await fetch(url, {
@@ -71,6 +71,16 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
     console.log("[v0] Flock batches response status:", response.status);
 
     if (!response.ok) {
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Flock batches endpoint not available (404), returning empty array");
+        return {
+          success: true,
+          message: "Flock batches endpoint not available",
+          data: [],
+        };
+      }
+      
       const errorMessage = await getErrorMessage(response, "Failed to fetch flock batches");
       console.error("[v0] Flock batches fetch error:", errorMessage);
       return {
@@ -104,7 +114,7 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
       params.append('userId', userId);
       params.append('farmId', farmId);
   
-      const url = `${buildApiUrl(`/api/MainFlockBatch/${batchId}`)}?${params.toString()}`;
+      const url = `${buildApiUrl(`/MainFlockBatch/${batchId}`)}?${params.toString()}`;
       console.log("[v0] Deleting flock batch:", url);
   
       const response = await fetch(url, {
@@ -148,7 +158,7 @@ export interface FlockBatchInput {
 
 export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<ApiResponse<FlockBatch>> {
   try {
-    const url = buildApiUrl('/api/MainFlockBatch');
+    const url = buildApiUrl('/MainFlockBatch');
     console.log("[v0] Creating flock batch:", url, flockBatch);
 
     const response = await fetch(url, {
@@ -191,7 +201,7 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
         params.append('userId', userId);
         params.append('farmId', farmId);
     
-        const url = `${buildApiUrl(`/api/MainFlockBatch/${id}`)}?${params.toString()}`;
+        const url = `${buildApiUrl(`/MainFlockBatch/${id}`)}?${params.toString()}`;
         console.log("[v0] Fetching flock batch:", url);
     
         const response = await fetch(url, {
@@ -229,7 +239,7 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
     
     export async function updateFlockBatch(id: number, flockBatch: Partial<FlockBatchInput>): Promise<ApiResponse> {
       try {
-        const url = buildApiUrl(`/api/MainFlockBatch/${id}`);
+        const url = buildApiUrl(`/MainFlockBatch/${id}`);
         console.log("[v0] Updating flock batch:", url, flockBatch);
     
         const response = await fetch(url, {
