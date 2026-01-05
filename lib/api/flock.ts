@@ -1,11 +1,17 @@
 // API utility functions for Flock management
 
+import { buildApiUrl, getAuthHeaders } from './config'
+
 function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
   const val = raw || fallback
   return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
 }
 
-const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+// For server-side use
+const DIRECT_API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+
+// Check if we should use proxy (browser) or direct URL (server)
+const IS_BROWSER = typeof window !== 'undefined'
 
 export interface Flock {
   farmId: string
@@ -93,23 +99,25 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
     if (userId) params.append('userId', userId)
     if (farmId) params.append('farmId', farmId)
     
-    const url = `${API_BASE_URL}/api/Flock${params.toString() ? '?' + params.toString() : ''}`
+    const endpoint = `/Flock${params.toString() ? '?' + params.toString() : ''}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Fetching flocks:", url)
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
     })
 
     console.log("[v0] Flocks response status:", response.status)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Flocks fetch error:", errorText)
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Flocks endpoint not available (404), using mock data")
+      } else {
+        const errorText = await response.text()
+        console.warn("[v0] Flocks API error:", response.status, errorText)
+      }
       // Mock data fallback
       console.warn("[v0] Using mock data for flocks due to API error.")
       const filteredMockData = mockFlocks.filter(flock => 
@@ -182,14 +190,13 @@ export async function getFlock(id: number, userId?: string, farmId?: string): Pr
     if (userId) params.append('userId', userId)
     if (farmId) params.append('farmId', farmId)
     
-    const url = `${API_BASE_URL}/api/Flock/${id}${params.toString() ? '?' + params.toString() : ''}`
+    const endpoint = `/Flock/${id}${params.toString() ? '?' + params.toString() : ''}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Fetching flock:", url)
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     })
 
     console.log("[v0] Flock response status:", response.status)
@@ -263,7 +270,8 @@ export async function getFlock(id: number, userId?: string, farmId?: string): Pr
 // Create new flock
 export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>> {
   try {
-    const url = `${API_BASE_URL}/api/Flock`
+    const endpoint = `/Flock`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Creating flock:", url)
     console.log("[v0] Flock input:", flock)
 
@@ -319,11 +327,7 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
       body: JSON.stringify(requestBody),
     })
 
@@ -394,7 +398,8 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
 // Update flock
 export async function updateFlock(id: number, flock: Partial<FlockInput>): Promise<ApiResponse<Flock>> {
   try {
-    const url = `${API_BASE_URL}/api/Flock/${id}`
+    const endpoint = `/Flock/${id}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Updating flock:", url)
 
     // Create the request body with proper field names that match the API expectations
@@ -417,11 +422,7 @@ export async function updateFlock(id: number, flock: Partial<FlockInput>): Promi
 
     const response = await fetch(url, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
       body: JSON.stringify(requestBody),
     })
 
@@ -481,18 +482,15 @@ export async function deleteFlock(id: number, userId?: string, farmId?: string):
     if (userId) params.append('userId', userId)
     if (farmId) params.append('farmId', farmId)
     
-    const url = `${API_BASE_URL}/api/Flock/${id}${params.toString() ? '?' + params.toString() : ''}`
+    const endpoint = `/Flock/${id}${params.toString() ? '?' + params.toString() : ''}`
+    const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Deleting flock:", url)
 
     console.log("id:", id, "userId:", userId, "farmId:", farmId)
 
     const response = await fetch(url, {
       method: "DELETE",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: 'cors',
+      headers: getAuthHeaders(),
     })
 
     console.log("[v0] Flock delete response status:", response.status)
