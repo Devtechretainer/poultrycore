@@ -147,9 +147,13 @@ export async function getCustomer(id: number, userId: string, farmId: string) {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Customer fetch error:", errorText)
-      console.log("[v0] Using mock data for customer")
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Customer endpoint not available (404), using mock data")
+      } else {
+        const errorText = await response.text()
+        console.warn("[v0] Customer API error:", response.status, errorText)
+      }
       
       // Find customer in mock data
       const customer = mockCustomers.find(c => c.customerId === id)
@@ -213,8 +217,13 @@ export async function createCustomer(customer: CustomerInput) {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Customer create error:", errorText)
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Customer endpoint not available (404), using mock data")
+      } else {
+        const errorText = await response.text()
+        console.warn("[v0] Customer create error:", response.status, errorText)
+      }
       console.log("[v0] Using mock data for customer creation")
       
       // Add to mock data
@@ -271,8 +280,13 @@ export async function updateCustomer(id: number, customer: CustomerInput) {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Customer update error:", errorText)
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Customer endpoint not available (404), using mock data")
+      } else {
+        const errorText = await response.text()
+        console.warn("[v0] Customer update error:", response.status, errorText)
+      }
       console.log("[v0] Using mock data for customer update")
       
       // Update in mock data
@@ -334,8 +348,13 @@ export async function deleteCustomer(id: number, userId: string, farmId: string)
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Customer delete error:", errorText)
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (response.status === 404) {
+        console.log("[v0] Customer endpoint not available (404), using mock data")
+      } else {
+        const errorText = await response.text()
+        console.warn("[v0] Customer delete error:", response.status, errorText)
+      }
       console.log("[v0] Using mock data for customer deletion")
       
       // Remove from mock data
