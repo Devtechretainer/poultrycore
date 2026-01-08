@@ -16,18 +16,9 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Edit, Trash2, ShoppingBag, Search, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { getUserContext } from "@/lib/utils/user-context"
+import { getSupplies, createSupply, updateSupply, deleteSupply, type SupplyInput, type Supply } from "@/lib/api/supply"
 
-interface SupplyItem {
-  id?: number
-  name: string
-  type: string
-  quantity: number
-  unit: string
-  cost: number
-  supplier?: string
-  purchaseDate?: string
-  notes?: string
-}
+type SupplyItem = Supply
 
 export default function SuppliesPage() {
   const router = useRouter()
@@ -84,21 +75,26 @@ export default function SuppliesPage() {
   }, [])
 
   const loadData = async () => {
+    const { userId, farmId } = getUserContext()
+    if (!userId || !farmId) {
+      setError("User context not found. Please log in again.")
+      setLoading(false)
+      return
+    }
+
     try {
-      const stored = localStorage.getItem("supply_items")
-      if (stored) {
-        setSupplies(JSON.parse(stored))
+      const res = await getSupplies(userId, farmId)
+      if (res.success && res.data) {
+        setSupplies(res.data)
+      } else {
+        setError(res.message || "Failed to load supplies")
       }
     } catch (err) {
+      console.error("[v0] Failed to load supplies:", err)
       setError("Failed to load supplies")
     } finally {
       setLoading(false)
     }
-  }
-
-  const saveData = (items: SupplyItem[]) => {
-    localStorage.setItem("supply_items", JSON.stringify(items))
-    setSupplies(items)
   }
 
   const handleSort = (field: string) => {
@@ -143,31 +139,90 @@ export default function SuppliesPage() {
     return list
   }, [supplies, search, selectedType, sortField, sortDirection])
 
-  const handleCreate = () => {
-    const newItem: SupplyItem = {
-      ...formData,
-      id: Date.now(),
+  const handleCreate = async () => {
+    const { userId, farmId } = getUserContext()
+    if (!userId || !farmId) return
+
+    const input: SupplyInput = {
+      userId,
+      farmId,
+      name: formData.name,
+      type: formData.type,
+      quantity: formData.quantity,
+      unit: formData.unit,
+      cost: formData.cost,
+      supplier: formData.supplier ?? null,
+      purchaseDate: formData.purchaseDate ?? null,
+      notes: formData.notes ?? null,
     }
-    saveData([...supplies, newItem])
-    setIsCreateDialogOpen(false)
-    resetForm()
+
+    try {
+      const res = await createSupply(input)
+      if (!res.success) {
+        setError(res.message || "Failed to create supply")
+        return
+      }
+      setIsCreateDialogOpen(false)
+      resetForm()
+      loadData()
+    } catch (err) {
+      console.error("[v0] Failed to create supply:", err)
+      setError("Failed to create supply")
+    }
   }
 
-  const handleUpdate = () => {
-    if (!editingItem) return
-    const updated = supplies.map(item => 
-      item.id === editingItem.id ? { ...formData, id: editingItem.id } : item
-    )
-    saveData(updated)
-    setIsEditDialogOpen(false)
-    setEditingItem(null)
-    resetForm()
+  const handleUpdate = async () => {
+    if (!editingItem || !editingItem.id) return
+    const { userId, farmId } = getUserContext()
+    if (!userId || !farmId) return
+
+    const input: SupplyInput = {
+      userId,
+      farmId,
+      name: formData.name,
+      type: formData.type,
+      quantity: formData.quantity,
+      unit: formData.unit,
+      cost: formData.cost,
+      supplier: formData.supplier ?? null,
+      purchaseDate: formData.purchaseDate ?? null,
+      notes: formData.notes ?? null,
+    }
+
+    try {
+      const res = await updateSupply(editingItem.id, input)
+      if (!res.success) {
+        setError(res.message || "Failed to update supply")
+        return
+      }
+      setIsEditDialogOpen(false)
+      setEditingItem(null)
+      resetForm()
+      loadData()
+    } catch (err) {
+      console.error("[v0] Failed to update supply:", err)
+      setError("Failed to update supply")
+    }
   }
 
-  const handleDelete = (item: SupplyItem) => {
+  const handleDelete = async (item: SupplyItem) => {
+    if (!item.id) return
     if (!confirm("Are you sure you want to delete this supply item?")) return
-    const updated = supplies.filter(i => i.id !== item.id)
-    saveData(updated)
+
+    const { userId, farmId } = getUserContext()
+    if (!userId || !farmId) return
+
+    try {
+      const res = await deleteSupply(item.id, userId, farmId)
+      if (!res.success) {
+        setError(res.message || "Failed to delete supply")
+        return
+      }
+      loadData()
+    } catch (err) {
+      console.error("[v0] Failed to delete supply:", err)
+      setError("Failed to delete supply")
+    }
   }
 
   const resetForm = () => {

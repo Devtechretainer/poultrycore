@@ -14,31 +14,28 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Edit, Trash2, Heart, Droplet, Pill, Search, RefreshCw, Calendar as CalendarIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Plus, Edit, Trash2, Heart, Droplet, Pill, Search, RefreshCw, Calendar as CalendarIcon, ArrowUpDown, ArrowUp, ArrowDown, Building2, Package } from "lucide-react"
 import { getFlocks, type Flock } from "@/lib/api/flock"
+import { getHouses, type House } from "@/lib/api/house"
 import { getUserContext } from "@/lib/utils/user-context"
-import { getProductionRecords, createProductionRecord, updateProductionRecord, type ProductionRecordInput } from "@/lib/api/production-record"
+import { getHealthRecords, createHealthRecord, updateHealthRecord, deleteHealthRecord, type HealthRecord, type HealthRecordInput } from "@/lib/api/health"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
-interface HealthRecord {
-  id?: number
-  flockId: number
-  date: string
-  vaccination?: string
-  medication?: string
-  waterConsumption?: number
-  notes?: string
-}
+type HealthType = "flock" | "house" | "inventory"
 
 export default function HealthPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<HealthType>("flock")
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [flocks, setFlocks] = useState<Flock[]>([])
+  const [houses, setHouses] = useState<House[]>([])
+  const [inventoryItems, setInventoryItems] = useState<any[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
@@ -46,6 +43,8 @@ export default function HealthPage() {
   // Filters
   const [search, setSearch] = useState("")
   const [selectedFlockId, setSelectedFlockId] = useState<string>("ALL")
+  const [selectedHouseId, setSelectedHouseId] = useState<string>("ALL")
+  const [selectedItemId, setSelectedItemId] = useState<string>("ALL")
   const [dateFrom, setDateFrom] = useState<Date>()
   const [dateTo, setDateTo] = useState<Date>()
 
@@ -54,9 +53,11 @@ export default function HealthPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
   // Form state
-  const [formData, setFormData] = useState<HealthRecord>({
-    flockId: 0,
-    date: new Date().toISOString().split('T')[0],
+  const [formData, setFormData] = useState<Partial<HealthRecordInput>>({
+    flockId: null,
+    houseId: null,
+    itemId: null,
+    recordDate: new Date().toISOString().split('T')[0],
     vaccination: "",
     medication: "",
     waterConsumption: undefined,
@@ -76,29 +77,45 @@ export default function HealthPage() {
     }
 
     try {
-      const [flocksRes, prodRecordsRes] = await Promise.all([
+      const [flocksRes, housesRes, healthRes] = await Promise.all([
         getFlocks(userId, farmId),
-        getProductionRecords(userId, farmId),
+        getHouses(userId, farmId),
+        getHealthRecords(userId, farmId),
       ])
 
       if (flocksRes.success && flocksRes.data) {
         setFlocks(flocksRes.data)
       }
 
-      if (prodRecordsRes.success && prodRecordsRes.data) {
-        // Extract health data from production records
-        const healthData: HealthRecord[] = prodRecordsRes.data
-          .filter((pr: any) => pr.medication && pr.medication !== "None")
-          .map((pr: any) => ({
-            id: pr.id,
-            flockId: pr.flockId || 0,
-            date: pr.date,
-            medication: pr.medication,
-            notes: pr.notes || "",
-          }))
-        setHealthRecords(healthData)
+      if (housesRes.success && housesRes.data) {
+        setHouses(housesRes.data)
+      }
+
+      // Load inventory items from localStorage (since there's no API yet)
+      try {
+        const stored = localStorage.getItem("inventory_items")
+        if (stored) {
+          setInventoryItems(JSON.parse(stored))
+        }
+      } catch (e) {
+        console.warn("Failed to load inventory items from localStorage")
+      }
+
+      if (healthRes.success && healthRes.data) {
+        setHealthRecords(healthRes.data.map((hr: any) => ({
+          id: hr.id || hr.Id,
+          flockId: hr.flockId || hr.FlockId,
+          houseId: hr.houseId || hr.HouseId,
+          itemId: hr.itemId || hr.ItemId,
+          recordDate: hr.recordDate || hr.RecordDate || hr.date || hr.Date,
+          vaccination: hr.vaccination || hr.Vaccination,
+          medication: hr.medication || hr.Medication,
+          waterConsumption: hr.waterConsumption || hr.WaterConsumption,
+          notes: hr.notes || hr.Notes,
+        })))
       }
     } catch (err) {
+      console.error("Failed to load health records:", err)
       setError("Failed to load health records")
     } finally {
       setLoading(false)
@@ -117,6 +134,15 @@ export default function HealthPage() {
   const filteredRecords = useMemo(() => {
     let list = healthRecords
 
+    // Filter by active tab type
+    if (activeTab === "flock") {
+      list = list.filter(r => r.flockId != null && r.houseId == null && r.itemId == null)
+    } else if (activeTab === "house") {
+      list = list.filter(r => r.houseId != null && r.flockId == null && r.itemId == null)
+    } else if (activeTab === "inventory") {
+      list = list.filter(r => r.itemId != null && r.flockId == null && r.houseId == null)
+    }
+
     if (search) {
       const q = search.toLowerCase()
       list = list.filter(r => 
@@ -126,16 +152,30 @@ export default function HealthPage() {
       )
     }
 
-    if (selectedFlockId !== "ALL") {
+    if (activeTab === "flock" && selectedFlockId !== "ALL") {
       list = list.filter(r => r.flockId === parseInt(selectedFlockId))
     }
 
+    if (activeTab === "house" && selectedHouseId !== "ALL") {
+      list = list.filter(r => r.houseId === parseInt(selectedHouseId))
+    }
+
+    if (activeTab === "inventory" && selectedItemId !== "ALL") {
+      list = list.filter(r => r.itemId === parseInt(selectedItemId))
+    }
+
     if (dateFrom) {
-      list = list.filter(r => new Date(r.date) >= dateFrom)
+      list = list.filter(r => {
+        const recordDate = r.recordDate || ""
+        return recordDate ? new Date(recordDate) >= dateFrom : false
+      })
     }
 
     if (dateTo) {
-      list = list.filter(r => new Date(r.date) <= dateTo)
+      list = list.filter(r => {
+        const recordDate = r.recordDate || ""
+        return recordDate ? new Date(recordDate) <= dateTo : false
+      })
     }
 
     // Apply sorting
@@ -146,12 +186,20 @@ export default function HealthPage() {
         
         switch (sortField) {
           case "date":
-            aVal = new Date(a.date).getTime()
-            bVal = new Date(b.date).getTime()
+            aVal = a.recordDate ? new Date(a.recordDate).getTime() : 0
+            bVal = b.recordDate ? new Date(b.recordDate).getTime() : 0
             break
           case "flock":
-            aVal = a.flockId
-            bVal = b.flockId
+            aVal = a.flockId || 0
+            bVal = b.flockId || 0
+            break
+          case "house":
+            aVal = a.houseId || 0
+            bVal = b.houseId || 0
+            break
+          case "item":
+            aVal = a.itemId || 0
+            bVal = b.itemId || 0
             break
           default:
             return 0
@@ -164,130 +212,101 @@ export default function HealthPage() {
     }
 
     return list
-  }, [healthRecords, search, selectedFlockId, dateFrom, dateTo, sortField, sortDirection])
+  }, [healthRecords, activeTab, search, selectedFlockId, selectedHouseId, selectedItemId, dateFrom, dateTo, sortField, sortDirection])
 
   const handleCreate = async () => {
     const { userId, farmId } = getUserContext()
     if (!userId || !farmId) return
 
     try {
-      // Sync to production records
-      const prodRecordsRes = await getProductionRecords(userId, farmId)
-      if (prodRecordsRes.success && prodRecordsRes.data) {
-        const matchingRecord = prodRecordsRes.data.find(
-          (pr: any) => pr.flockId === formData.flockId &&
-          new Date(pr.date).toISOString().split('T')[0] === formData.date
-        )
-
-        const updateData: Partial<ProductionRecordInput> = {
-          medication: formData.medication || "None",
-        }
-
-        if (matchingRecord) {
-          await updateProductionRecord(matchingRecord.id, updateData)
-        } else {
-          // Create new production record with health data
-          const flock = flocks.find(f => f.flockId === formData.flockId)
-          if (flock) {
-            const startDate = new Date(flock.startDate)
-            const recordDate = new Date(formData.date)
-            const ageDays = Math.floor((recordDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-            const ageWeeks = Math.floor(ageDays / 7)
-
-            const prodInput: ProductionRecordInput = {
-              farmId,
-              userId,
-              createdBy: userId,
-              updatedBy: userId,
-              ageInWeeks: ageWeeks,
-              ageInDays: ageDays,
-              date: formData.date + 'T00:00:00Z',
-              noOfBirds: flock.quantity || 0,
-              mortality: 0,
-              noOfBirdsLeft: flock.quantity || 0,
-              feedKg: 0,
-              medication: formData.medication || "None",
-              production9AM: 0,
-              production12PM: 0,
-              production4PM: 0,
-              totalProduction: 0,
-              flockId: formData.flockId,
-            }
-            await createProductionRecord(prodInput)
-          }
-        }
+      const input: HealthRecordInput = {
+        userId,
+        farmId,
+        flockId: activeTab === "flock" ? (formData.flockId || null) : null,
+        houseId: activeTab === "house" ? (formData.houseId || null) : null,
+        itemId: activeTab === "inventory" ? (formData.itemId || null) : null,
+        recordDate: formData.recordDate || new Date().toISOString().split('T')[0],
+        vaccination: formData.vaccination || null,
+        medication: formData.medication || null,
+        waterConsumption: formData.waterConsumption || null,
+        notes: formData.notes || null,
       }
 
-      setIsCreateDialogOpen(false)
-      resetForm()
-      loadData()
+      const res = await createHealthRecord(input)
+      if (res.success) {
+        setIsCreateDialogOpen(false)
+        resetForm()
+        loadData()
+      } else {
+        setError(res.message || "Failed to create health record")
+      }
     } catch (err) {
+      console.error("Create error:", err)
       setError("Failed to create health record")
     }
   }
 
   const handleUpdate = async () => {
-    if (!editingRecord) return
+    if (!editingRecord || !editingRecord.id) return
 
     const { userId, farmId } = getUserContext()
     if (!userId || !farmId) return
 
     try {
-      const prodRecordsRes = await getProductionRecords(userId, farmId)
-      if (prodRecordsRes.success && prodRecordsRes.data) {
-        const matchingRecord = prodRecordsRes.data.find(
-          (pr: any) => pr.flockId === formData.flockId &&
-          new Date(pr.date).toISOString().split('T')[0] === formData.date
-        )
-
-        if (matchingRecord) {
-          const updateData: Partial<ProductionRecordInput> = {
-            medication: formData.medication || "None",
-          }
-          await updateProductionRecord(matchingRecord.id, updateData)
-        }
+      const input: HealthRecordInput = {
+        userId,
+        farmId,
+        flockId: activeTab === "flock" ? (formData.flockId || null) : null,
+        houseId: activeTab === "house" ? (formData.houseId || null) : null,
+        itemId: activeTab === "inventory" ? (formData.itemId || null) : null,
+        recordDate: formData.recordDate || new Date().toISOString().split('T')[0],
+        vaccination: formData.vaccination || null,
+        medication: formData.medication || null,
+        waterConsumption: formData.waterConsumption || null,
+        notes: formData.notes || null,
       }
 
-      setIsEditDialogOpen(false)
-      setEditingRecord(null)
-      resetForm()
-      loadData()
+      const res = await updateHealthRecord(editingRecord.id, input)
+      if (res.success) {
+        setIsEditDialogOpen(false)
+        setEditingRecord(null)
+        resetForm()
+        loadData()
+      } else {
+        setError(res.message || "Failed to update health record")
+      }
     } catch (err) {
+      console.error("Update error:", err)
       setError("Failed to update health record")
     }
   }
 
   const handleDelete = async (record: HealthRecord) => {
     if (!confirm("Are you sure you want to delete this health record?")) return
+    if (!record.id) return
 
     const { userId, farmId } = getUserContext()
     if (!userId || !farmId) return
 
     try {
-      const prodRecordsRes = await getProductionRecords(userId, farmId)
-      if (prodRecordsRes.success && prodRecordsRes.data) {
-        const matchingRecord = prodRecordsRes.data.find(
-          (pr: any) => pr.id === record.id
-        )
-
-        if (matchingRecord) {
-          const updateData: Partial<ProductionRecordInput> = {
-            medication: "None",
-          }
-          await updateProductionRecord(matchingRecord.id, updateData)
-        }
+      const res = await deleteHealthRecord(record.id, userId, farmId)
+      if (res.success) {
+        loadData()
+      } else {
+        setError(res.message || "Failed to delete health record")
       }
-
-      loadData()
     } catch (err) {
+      console.error("Delete error:", err)
       setError("Failed to delete health record")
     }
   }
 
   const resetForm = () => {
     setFormData({
-      flockId: 0,
-      date: new Date().toISOString().split('T')[0],
+      flockId: null,
+      houseId: null,
+      itemId: null,
+      recordDate: new Date().toISOString().split('T')[0],
       vaccination: "",
       medication: "",
       waterConsumption: undefined,
@@ -297,12 +316,15 @@ export default function HealthPage() {
 
   const openEditDialog = (record: HealthRecord) => {
     setEditingRecord(record)
+    const recordDate = record.recordDate || ""
     setFormData({
-      flockId: record.flockId,
-      date: record.date.split('T')[0],
+      flockId: record.flockId || null,
+      houseId: record.houseId || null,
+      itemId: record.itemId || null,
+      recordDate: recordDate ? recordDate.split('T')[0] : new Date().toISOString().split('T')[0],
       vaccination: record.vaccination || "",
       medication: record.medication || "",
-      waterConsumption: record.waterConsumption,
+      waterConsumption: record.waterConsumption || undefined,
       notes: record.notes || "",
     })
     setIsEditDialogOpen(true)
@@ -311,13 +333,28 @@ export default function HealthPage() {
   const clearFilters = () => {
     setSearch("")
     setSelectedFlockId("ALL")
+    setSelectedHouseId("ALL")
+    setSelectedItemId("ALL")
     setDateFrom(undefined)
     setDateTo(undefined)
   }
 
-  const getFlockName = (flockId: number) => {
+  const getFlockName = (flockId: number | null | undefined) => {
+    if (!flockId) return "-"
     const flock = flocks.find(f => f.flockId === flockId)
     return flock?.name || `Flock ${flockId}`
+  }
+
+  const getHouseName = (houseId: number | null | undefined) => {
+    if (!houseId) return "-"
+    const house = houses.find(h => h.houseId === houseId)
+    return house?.name || `House ${houseId}`
+  }
+
+  const getItemName = (itemId: number | null | undefined) => {
+    if (!itemId) return "-"
+    const item = inventoryItems.find(i => i.id === itemId)
+    return item?.name || `Item ${itemId}`
   }
 
   const handleLogout = () => {
@@ -348,7 +385,7 @@ export default function HealthPage() {
                   </div>
                   <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
                 </div>
-                <p className="text-slate-600">Track vaccinations, medications, and water consumption</p>
+                <p className="text-slate-600">Track vaccinations, medications, and water consumption for your flocks, houses, and inventory</p>
               </div>
               <Dialog
                 open={isCreateDialogOpen}
@@ -367,36 +404,78 @@ export default function HealthPage() {
                   <DialogHeader>
                     <DialogTitle>Create Health Record</DialogTitle>
                     <DialogDescription>
-                      Record daily health information for your flocks
+                      Record daily health information for your {activeTab === "flock" ? "flocks" : activeTab === "house" ? "houses" : "inventory items"}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="flockId">Flock *</Label>
-                        <Select
-                          value={formData.flockId.toString()}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, flockId: parseInt(value) }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select flock" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {flocks.map(flock => (
-                              <SelectItem key={flock.flockId} value={flock.flockId.toString()}>
-                                {flock.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {activeTab === "flock" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="flockId">Flock *</Label>
+                          <Select
+                            value={formData.flockId ? formData.flockId.toString() : ""}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, flockId: parseInt(value), houseId: null, itemId: null }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select flock" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {flocks.map(flock => (
+                                <SelectItem key={flock.flockId} value={flock.flockId.toString()}>
+                                  {flock.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {activeTab === "house" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="houseId">House *</Label>
+                          <Select
+                            value={formData.houseId ? formData.houseId.toString() : ""}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, houseId: parseInt(value), flockId: null, itemId: null }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select house" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {houses.map(house => (
+                                <SelectItem key={house.houseId} value={house.houseId.toString()}>
+                                  {house.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {activeTab === "inventory" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="itemId">Inventory Item *</Label>
+                          <Select
+                            value={formData.itemId ? formData.itemId.toString() : ""}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, itemId: parseInt(value), flockId: null, houseId: null }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select item" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {inventoryItems.map(item => (
+                                <SelectItem key={item.id} value={item.id.toString()}>
+                                  {item.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="date">Date *</Label>
                         <Input
                           id="date"
                           type="date"
-                          value={formData.date}
-                          onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                          value={formData.recordDate || ""}
+                          onChange={(e) => setFormData(prev => ({ ...prev, recordDate: e.target.value }))}
                           required
                         />
                       </div>
@@ -406,7 +485,7 @@ export default function HealthPage() {
                       <Input
                         id="vaccination"
                         placeholder="e.g., Newcastle Disease Vaccine"
-                        value={formData.vaccination}
+                        value={formData.vaccination || ""}
                         onChange={(e) => setFormData(prev => ({ ...prev, vaccination: e.target.value }))}
                       />
                     </div>
@@ -415,7 +494,7 @@ export default function HealthPage() {
                       <Input
                         id="medication"
                         placeholder="e.g., Antibiotics, Vitamins"
-                        value={formData.medication}
+                        value={formData.medication || ""}
                         onChange={(e) => setFormData(prev => ({ ...prev, medication: e.target.value }))}
                       />
                     </div>
@@ -436,7 +515,7 @@ export default function HealthPage() {
                       <Textarea
                         id="notes"
                         placeholder="Additional notes about health status"
-                        value={formData.notes}
+                        value={formData.notes || ""}
                         onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                       />
                     </div>
@@ -457,24 +536,42 @@ export default function HealthPage() {
               </Alert>
             )}
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
-              <div className="relative w-full sm:w-[240px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-              </div>
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as HealthType)}>
+              <TabsList>
+                <TabsTrigger value="flock">
+                  <Heart className="w-4 h-4 mr-2" />
+                  Flock Health
+                </TabsTrigger>
+                <TabsTrigger value="house">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  House Health
+                </TabsTrigger>
+                <TabsTrigger value="inventory">
+                  <Package className="w-4 h-4 mr-2" />
+                  Inventory Health
+                </TabsTrigger>
+              </TabsList>
 
-              <Select value={selectedFlockId} onValueChange={setSelectedFlockId}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Flock" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Flocks</SelectItem>
-                  {flocks.map(f => (
-                    <SelectItem key={f.flockId} value={f.flockId.toString()}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TabsContent value="flock" className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
+                  <div className="relative w-full sm:w-[240px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  </div>
+
+                  <Select value={selectedFlockId} onValueChange={setSelectedFlockId}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Flock" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Flocks</SelectItem>
+                      {flocks.map(f => (
+                        <SelectItem key={f.flockId} value={f.flockId.toString()}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -500,12 +597,119 @@ export default function HealthPage() {
                 </PopoverContent>
               </Popover>
 
-              <div className="ml-auto">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Reset
-                </Button>
-              </div>
-            </div>
+                  <div className="ml-auto">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="house" className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
+                  <div className="relative w-full sm:w-[240px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  </div>
+
+                  <Select value={selectedHouseId} onValueChange={setSelectedHouseId}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="House" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Houses</SelectItem>
+                      {houses.map(h => (
+                        <SelectItem key={h.houseId} value={h.houseId.toString()}>{h.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateFrom ? format(dateFrom, "MMM dd") : "From"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateTo && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateTo ? format(dateTo, "MMM dd") : "To"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="ml-auto">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="inventory" className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-white rounded border">
+                  <div className="relative w-full sm:w-[240px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  </div>
+
+                  <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Items</SelectItem>
+                      {inventoryItems.map(item => (
+                        <SelectItem key={item.id} value={item.id.toString()}>{item.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateFrom ? format(dateFrom, "MMM dd") : "From"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal w-[140px]", !dateTo && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateTo ? format(dateTo, "MMM dd") : "To"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="ml-auto">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+            </Tabs>
 
             {/* Table */}
             {loading ? (
@@ -549,19 +753,51 @@ export default function HealthPage() {
                             )}
                           </div>
                         </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-slate-50"
-                          onClick={() => handleSort("flock")}
-                        >
-                          <div className="flex items-center gap-2">
-                            Flock
-                            {sortField === "flock" ? (
-                              sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                            ) : (
-                              <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                            )}
-                          </div>
-                        </TableHead>
+                        {activeTab === "flock" && (
+                          <TableHead 
+                            className="cursor-pointer hover:bg-slate-50"
+                            onClick={() => handleSort("flock")}
+                          >
+                            <div className="flex items-center gap-2">
+                              Flock
+                              {sortField === "flock" ? (
+                                sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                        )}
+                        {activeTab === "house" && (
+                          <TableHead 
+                            className="cursor-pointer hover:bg-slate-50"
+                            onClick={() => handleSort("house")}
+                          >
+                            <div className="flex items-center gap-2">
+                              House
+                              {sortField === "house" ? (
+                                sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                        )}
+                        {activeTab === "inventory" && (
+                          <TableHead 
+                            className="cursor-pointer hover:bg-slate-50"
+                            onClick={() => handleSort("item")}
+                          >
+                            <div className="flex items-center gap-2">
+                              Item
+                              {sortField === "item" ? (
+                                sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                        )}
                         <TableHead>Vaccination</TableHead>
                         <TableHead>Medication</TableHead>
                         <TableHead>Water (L)</TableHead>
@@ -572,8 +808,10 @@ export default function HealthPage() {
                     <TableBody>
                       {filteredRecords.map((record, idx) => (
                         <TableRow key={record.id || idx}>
-                          <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{getFlockName(record.flockId)}</TableCell>
+                          <TableCell>{record.recordDate ? new Date(record.recordDate).toLocaleDateString() : "-"}</TableCell>
+                          {activeTab === "flock" && <TableCell>{getFlockName(record.flockId)}</TableCell>}
+                          {activeTab === "house" && <TableCell>{getHouseName(record.houseId)}</TableCell>}
+                          {activeTab === "inventory" && <TableCell>{getItemName(record.itemId)}</TableCell>}
                           <TableCell>
                             {record.vaccination ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-700">
@@ -647,31 +885,73 @@ export default function HealthPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-flockId">Flock *</Label>
-                      <Select
-                        value={formData.flockId.toString()}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, flockId: parseInt(value) }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select flock" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {flocks.map(flock => (
-                            <SelectItem key={flock.flockId} value={flock.flockId.toString()}>
-                              {flock.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {activeTab === "flock" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-flockId">Flock *</Label>
+                        <Select
+                          value={formData.flockId ? formData.flockId.toString() : ""}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, flockId: parseInt(value), houseId: null, itemId: null }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select flock" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {flocks.map(flock => (
+                              <SelectItem key={flock.flockId} value={flock.flockId.toString()}>
+                                {flock.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {activeTab === "house" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-houseId">House *</Label>
+                        <Select
+                          value={formData.houseId ? formData.houseId.toString() : ""}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, houseId: parseInt(value), flockId: null, itemId: null }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select house" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {houses.map(house => (
+                              <SelectItem key={house.houseId} value={house.houseId.toString()}>
+                                {house.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {activeTab === "inventory" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-itemId">Inventory Item *</Label>
+                        <Select
+                          value={formData.itemId ? formData.itemId.toString() : ""}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, itemId: parseInt(value), flockId: null, houseId: null }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select item" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {inventoryItems.map(item => (
+                              <SelectItem key={item.id} value={item.id.toString()}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="edit-date">Date *</Label>
-                      <Input
+                        <Input
                         id="edit-date"
                         type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                        value={formData.recordDate || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, recordDate: e.target.value }))}
                         required
                       />
                     </div>
@@ -681,7 +961,7 @@ export default function HealthPage() {
                     <Input
                       id="edit-vaccination"
                       placeholder="e.g., Newcastle Disease Vaccine"
-                      value={formData.vaccination}
+                      value={formData.vaccination || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, vaccination: e.target.value }))}
                     />
                   </div>
@@ -690,7 +970,7 @@ export default function HealthPage() {
                     <Input
                       id="edit-medication"
                       placeholder="e.g., Antibiotics, Vitamins"
-                      value={formData.medication}
+                      value={formData.medication || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, medication: e.target.value }))}
                     />
                   </div>
@@ -711,7 +991,7 @@ export default function HealthPage() {
                     <Textarea
                       id="edit-notes"
                       placeholder="Additional notes about health status"
-                      value={formData.notes}
+                      value={formData.notes || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     />
                   </div>

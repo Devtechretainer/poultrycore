@@ -1,11 +1,17 @@
 // Houses REST client targeting PoultryFarmAPI
 
+import { buildApiUrl, getAuthHeaders } from './config'
+
 function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
   const val = raw || fallback
   return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
 }
 
-const API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+// For server-side use
+const DIRECT_API_BASE_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL)
+
+// Check if we should use proxy (browser) or direct URL (server)
+const IS_BROWSER = typeof window !== 'undefined'
 
 export interface House {
   houseId: number
@@ -33,16 +39,21 @@ export interface ApiResponse<T = any> {
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
   try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : undefined
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(init?.headers || {}),
-      },
-      mode: 'cors',
+    // Remove /api/ prefix if present (buildApiUrl handles it)
+    const cleanPath = path.startsWith('/api/') ? path.replace('/api', '') : path
+    const url = IS_BROWSER ? buildApiUrl(cleanPath) : `${DIRECT_API_BASE_URL}${path}`
+    
+    const method = init?.method || 'GET'
+    const headers = getAuthHeaders()
+    
+    // Merge any additional headers from init
+    if (init?.headers) {
+      Object.assign(headers, init.headers)
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers,
       ...init,
     })
 
@@ -50,11 +61,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
     const body = contentType.includes('application/json') ? await res.json() : await res.text()
 
     if (!res.ok) {
+      // Handle 404 gracefully - endpoint might not exist on backend
+      if (res.status === 404) {
+        console.log(`[v0] House API endpoint not available (404): ${path}`)
+      } else {
+        console.warn(`[v0] House API error (${res.status}):`, body && (body.message || body.Message) || res.statusText)
+      }
       return { success: false, message: (body && (body.message || body.Message)) || res.statusText }
     }
 
     return { success: true, data: body }
   } catch (error: any) {
+    console.error(`[v0] House API network error:`, error)
     return { success: false, message: error?.message || 'Network error' }
   }
 }
