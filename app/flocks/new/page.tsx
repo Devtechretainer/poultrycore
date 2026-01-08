@@ -84,9 +84,14 @@ export default function NewFlockPage() {
   }
 
   const handleFlockBatchChange = (batchId: number) => {
-    const selected = flockBatches.find(batch => batch.batchId === batchId) || null
-    setSelectedFlockBatch(selected)
-    handleInputChange("batchId", batchId)
+    if (batchId === 0 || !batchId) {
+      setSelectedFlockBatch(null)
+      handleInputChange("batchId", 0)
+    } else {
+      const selected = flockBatches.find(batch => batch.batchId === batchId) || null
+      setSelectedFlockBatch(selected)
+      handleInputChange("batchId", batchId)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,7 +112,7 @@ export default function NewFlockPage() {
       return
     }
 
-    if (!formData.batchId) {
+    if (!formData.batchId || formData.batchId === 0) {
       setError("Please select a batch")
       return
     }
@@ -190,16 +195,20 @@ export default function NewFlockPage() {
                       <select
                         id="flockBatchId"
                         className="w-full h-11 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={formData.batchId}
-                        onChange={(e) => handleFlockBatchChange(parseInt(e.target.value))}
+                        value={formData.batchId || ''}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseInt(e.target.value) : 0
+                          handleFlockBatchChange(value)
+                        }}
                         disabled={loading || flockBatchesLoading}
                         required
                       >
+                        <option value="">Please select a batch</option>
                         {flockBatches.map(batch => (
                           <option key={batch.batchId} value={batch.batchId}>{batch.batchName}</option>
                         ))}
                       </select>
-                      <Users className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+                      <Users className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
                     </div>
                     {selectedFlockBatch && (
                       <p className="text-sm text-slate-500">
