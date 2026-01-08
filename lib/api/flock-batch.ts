@@ -54,6 +54,22 @@ async function getErrorMessage(response: Response, defaultMessage: string): Prom
   }
 }
 
+// Helper function to map backend response (PascalCase) to frontend format (camelCase)
+function mapFlockBatch(raw: any): FlockBatch {
+  return {
+    batchId: Number(raw.batchId ?? raw.BatchId ?? 0),
+    farmId: raw.farmId ?? raw.FarmId ?? '',
+    userId: raw.userId ?? raw.UserId ?? '',
+    batchCode: raw.batchCode ?? raw.BatchCode ?? '',
+    batchName: raw.batchName ?? raw.BatchName ?? '',
+    breed: raw.breed ?? raw.Breed ?? '',
+    numberOfBirds: Number(raw.numberOfBirds ?? raw.NumberOfBirds ?? 0),
+    startDate: raw.startDate ?? raw.StartDate ?? '',
+    status: raw.status ?? raw.Status ?? 'active',
+    createdDate: raw.createdDate ?? raw.CreatedDate ?? '',
+  }
+}
+
 export async function getFlockBatches(userId?: string, farmId?: string): Promise<ApiResponse<FlockBatch[]>> {
   try {
     const params = new URLSearchParams();
@@ -93,10 +109,13 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
     const data = await response.json();
     console.log("[v0] Flock batches data received:", data);
 
+    // Map response to handle both camelCase and PascalCase
+    const batches = Array.isArray(data) ? data.map(mapFlockBatch) : [];
+
     return {
       success: true,
       message: "Flock batches fetched successfully",
-      data: data as FlockBatch[],
+      data: batches,
     };
     } catch (error) {
       console.error("[v0] Flock batches fetch error:", error);
@@ -159,12 +178,24 @@ export interface FlockBatchInput {
 export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<ApiResponse<FlockBatch>> {
   try {
     const url = buildApiUrl('/MainFlockBatch');
-    console.log("[v0] Creating flock batch:", url, flockBatch);
+    
+    // Convert camelCase to PascalCase to match backend C# model
+    const payload = {
+      UserId: flockBatch.userId,
+      FarmId: flockBatch.farmId,
+      BatchName: flockBatch.batchName,
+      BatchCode: flockBatch.batchCode,
+      StartDate: flockBatch.startDate,
+      Breed: flockBatch.breed,
+      NumberOfBirds: flockBatch.numberOfBirds,
+    };
+    
+    console.log("[v0] Creating flock batch:", url, payload);
 
     const response = await fetch(url, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(flockBatch),
+      body: JSON.stringify(payload),
     });
 
     console.log("[v0] Flock batch creation response status:", response.status);
@@ -181,10 +212,13 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
     const data = await response.json();
     console.log("[v0] Flock batch created successfully:", data);
 
+    // Map response to handle both camelCase and PascalCase
+    const batch = mapFlockBatch(data);
+
     return {
       success: true,
       message: "Flock batch created successfully",
-      data: data as FlockBatch,
+      data: batch,
     };
   } catch (error) {
     console.error("[v0] Flock batch creation error:", error);
@@ -220,14 +254,17 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
           };
         }
     
-        const data = await response.json();
-        console.log("[v0] Flock batch data received:", data);
-    
-        return {
-          success: true,
-          message: "Flock batch fetched successfully",
-          data: data as FlockBatch,
-        };
+    const data = await response.json();
+    console.log("[v0] Flock batch data received:", data);
+
+    // Map response to handle both camelCase and PascalCase
+    const batch = mapFlockBatch(data);
+
+    return {
+      success: true,
+      message: "Flock batch fetched successfully",
+      data: batch,
+    };
       } catch (error) {
         console.error("[v0] Flock batch fetch error:", error);
         return {
@@ -240,12 +277,23 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
     export async function updateFlockBatch(id: number, flockBatch: Partial<FlockBatchInput>): Promise<ApiResponse> {
       try {
         const url = buildApiUrl(`/MainFlockBatch/${id}`);
-        console.log("[v0] Updating flock batch:", url, flockBatch);
+        
+        // Convert camelCase to PascalCase to match backend C# model
+        const payload: any = {};
+        if (flockBatch.userId !== undefined) payload.UserId = flockBatch.userId;
+        if (flockBatch.farmId !== undefined) payload.FarmId = flockBatch.farmId;
+        if (flockBatch.batchName !== undefined) payload.BatchName = flockBatch.batchName;
+        if (flockBatch.batchCode !== undefined) payload.BatchCode = flockBatch.batchCode;
+        if (flockBatch.startDate !== undefined) payload.StartDate = flockBatch.startDate;
+        if (flockBatch.breed !== undefined) payload.Breed = flockBatch.breed;
+        if (flockBatch.numberOfBirds !== undefined) payload.NumberOfBirds = flockBatch.numberOfBirds;
+        
+        console.log("[v0] Updating flock batch:", url, payload);
     
         const response = await fetch(url, {
           method: "PUT",
           headers: getAuthHeaders(),
-          body: JSON.stringify(flockBatch),
+          body: JSON.stringify(payload),
         });
     
         console.log("[v0] Flock batch update response status:", response.status);

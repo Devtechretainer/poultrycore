@@ -11,9 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Bird } from "lucide-react"
 import { createFlockBatch, type FlockBatchInput } from "@/lib/api/flock-batch"
 import { getUserContext } from "@/lib/utils/user-context"
+import { useToast } from "@/hooks/use-toast"
 
 export default function NewFlockBatchPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -64,6 +66,10 @@ export default function NewFlockBatchPage() {
     const result = await createFlockBatch(flockBatchData)
     
     if (result.success) {
+      toast({
+        title: "Success!",
+        description: "Flock batch created successfully.",
+      })
       router.push("/flock-batch")
     } else {
       setError(result.message)
