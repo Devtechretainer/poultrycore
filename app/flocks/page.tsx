@@ -141,13 +141,40 @@ export default function FlocksPage() {
     
     if (result.success) {
       // Handle both empty arrays and undefined/null
-      const flocksData = result.data || []
-      console.log("[FlocksPage] Setting flocks:", flocksData.length, "items")
+      let flocksData = result.data || []
+      console.log("[FlocksPage] Initial flocks received:", flocksData.length, "items")
+      
+      // Additional client-side filtering by farmId as a safeguard
+      // Ensure only flocks belonging to the current farm are displayed
+      if (farmId && flocksData.length > 0) {
+        const beforeFilter = flocksData.length
+        flocksData = flocksData.filter(flock => {
+          const flockFarmId = String(flock.farmId || '')
+          const currentFarmId = String(farmId)
+          const matches = flockFarmId === currentFarmId
+          if (!matches) {
+            console.warn("[FlocksPage] Filtered out flock:", flock.name, "farmId:", flock.farmId, "does not match:", farmId)
+          }
+          return matches
+        })
+        console.log("[FlocksPage] Filtered by farmId:", farmId, "Before:", beforeFilter, "After:", flocksData.length)
+        
+        if (beforeFilter > flocksData.length) {
+          console.warn("[FlocksPage] Warning: Backend returned", beforeFilter - flocksData.length, "flocks that don't belong to current farmId:", farmId)
+        }
+      }
       
       if (flocksData.length > 0) {
         console.log("[FlocksPage] Sample flock:", flocksData[0])
         console.log("[FlocksPage] All flock userIds:", flocksData.map(f => f.userId))
         console.log("[FlocksPage] All flock farmIds:", flocksData.map(f => f.farmId))
+        
+        // Verify all flocks belong to the correct farm
+        const invalidFlocks = flocksData.filter(f => String(f.farmId) !== String(farmId))
+        if (invalidFlocks.length > 0) {
+          console.error("[FlocksPage] ERROR: Found", invalidFlocks.length, "flocks with incorrect farmId!")
+          console.error("[FlocksPage] Invalid flocks:", invalidFlocks.map(f => ({ name: f.name, farmId: f.farmId })))
+        }
       } else {
         console.warn("[FlocksPage] No flocks returned from API")
         console.warn("[FlocksPage] This could mean:")

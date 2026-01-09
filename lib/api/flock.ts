@@ -195,10 +195,30 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
       console.log("[v0] Sample mapped flock:", mappedData[0])
     }
 
+    // Filter by farmId and userId on the frontend as a safeguard
+    // This ensures we only return flocks for the current farm, even if the backend returns all
+    let filteredData = mappedData
+    if (farmId) {
+      filteredData = filteredData.filter((flock: any) => {
+        const flockFarmId = String(flock.farmId || '')
+        const requestedFarmId = String(farmId)
+        return flockFarmId === requestedFarmId
+      })
+      console.log("[v0] Filtered by farmId:", farmId, "Result count:", filteredData.length)
+    }
+    if (userId) {
+      filteredData = filteredData.filter((flock: any) => {
+        const flockUserId = String(flock.userId || '')
+        const requestedUserId = String(userId)
+        return flockUserId === requestedUserId
+      })
+      console.log("[v0] Filtered by userId:", userId, "Result count:", filteredData.length)
+    }
+
     return {
       success: true,
       message: "Flocks fetched successfully",
-      data: mappedData as Flock[],
+      data: filteredData as Flock[],
     }
   } catch (error) {
     console.error("[v0] Flocks fetch error:", error)
