@@ -495,12 +495,46 @@ export async function deleteFlock(id: number, userId?: string, farmId?: string):
 
     console.log("[v0] Flock delete response status:", response.status)
 
+    // Handle 204 No Content (successful delete) - no body to parse
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: "Flock deleted successfully",
+      }
+    }
+
+    // Handle 200 OK with potential body
+    if (response.status === 200) {
+      // Try to read body if present, but don't fail if empty
+      try {
+        const text = await response.text()
+        if (text) {
+          try {
+            const data = JSON.parse(text)
+            return {
+              success: true,
+              message: data.message || "Flock deleted successfully",
+            }
+          } catch {
+            // Not JSON, that's fine
+          }
+        }
+      } catch {
+        // No body, that's fine
+      }
+      return {
+        success: true,
+        message: "Flock deleted successfully",
+      }
+    }
+
+    // Handle error responses
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] Flock delete error:", errorText)
       return {
         success: false,
-        message: "Failed to delete flock",
+        message: errorText || "Failed to delete flock",
       }
     }
 

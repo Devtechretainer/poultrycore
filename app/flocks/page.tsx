@@ -124,12 +124,21 @@ export default function FlocksPage() {
       return
     }
 
+    console.log("[FlocksPage] Loading flocks for userId:", userId, "farmId:", farmId)
     const result = await getFlocks(userId, farmId)
+    console.log("[FlocksPage] Flocks result:", result)
     
-    if (result.success && result.data) {
-      setFlocks(result.data)
+    if (result.success) {
+      // Handle both empty arrays and undefined/null
+      const flocksData = result.data || []
+      console.log("[FlocksPage] Setting flocks:", flocksData.length, "items")
+      setFlocks(Array.isArray(flocksData) ? flocksData : [])
       setCurrentPage(1)
+      if (flocksData.length === 0) {
+        console.log("[FlocksPage] No flocks found - this might be normal if no flocks exist yet")
+      }
     } else {
+      console.error("[FlocksPage] Failed to load flocks:", result.message)
       setError(result.message || "Failed to load flocks")
     }
     

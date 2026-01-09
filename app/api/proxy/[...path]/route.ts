@@ -106,7 +106,15 @@ async function handleRequest(
     console.log('[Proxy API] Response status:', response.status, response.statusText)
     console.log('[Proxy API] Response headers:', Object.fromEntries(response.headers.entries()))
 
-    // Get response body
+    // Handle 204 No Content - no body to read
+    if (response.status === 204) {
+      return new NextResponse(null, {
+        status: 204,
+        statusText: response.statusText,
+      })
+    }
+
+    // Get response body for other status codes
     const contentType = response.headers.get('content-type') || ''
     let body: any
     

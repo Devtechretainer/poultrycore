@@ -140,9 +140,43 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-  
+
       console.log("[v0] Flock batch delete response status:", response.status);
-  
+
+      // Handle 204 No Content (successful delete) - no body to parse
+      if (response.status === 204) {
+        return {
+          success: true,
+          message: "Flock batch deleted successfully",
+        };
+      }
+
+      // Handle 200 OK with potential body
+      if (response.status === 200) {
+        // Try to read body if present, but don't fail if empty
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const data = JSON.parse(text);
+              return {
+                success: true,
+                message: data.message || "Flock batch deleted successfully",
+              };
+            } catch {
+              // Not JSON, that's fine
+            }
+          }
+        } catch {
+          // No body, that's fine
+        }
+        return {
+          success: true,
+          message: "Flock batch deleted successfully",
+        };
+      }
+
+      // Handle error responses
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response, "Failed to delete flock batch");
         console.error("[v0] Flock batch delete error:", errorMessage);
@@ -151,7 +185,7 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
           message: errorMessage,
         };
       }
-  
+
       return {
         success: true,
         message: "Flock batch deleted successfully",
