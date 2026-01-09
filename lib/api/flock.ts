@@ -148,9 +148,18 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
 
     const data = await response.json()
     console.log("[v0] Flocks data received:", data)
+    console.log("[v0] Flocks data type:", typeof data, "Is array?", Array.isArray(data))
+    if (Array.isArray(data)) {
+      console.log("[v0] Flocks count:", data.length)
+      if (data.length > 0) {
+        console.log("[v0] First flock sample:", data[0])
+        console.log("[v0] Request filters - userId:", userId, "farmId:", farmId)
+        console.log("[v0] First flock userId:", data[0]?.userId || data[0]?.UserId, "farmId:", data[0]?.farmId || data[0]?.FarmId)
+      }
+    }
 
     if (!Array.isArray(data)) {
-      console.error("[v0] Expected array but got:", typeof data)
+      console.error("[v0] Expected array but got:", typeof data, "Value:", data)
       console.warn("[v0] Using mock data for flocks due to unexpected data format.")
       const filteredMockData = mockFlocks.filter(flock => 
         (!userId || flock.userId === userId) && 
@@ -163,10 +172,33 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
       }
     }
 
+    // Map backend PascalCase to frontend camelCase if needed
+    const mappedData = (data as any[]).map((flock: any) => ({
+      flockId: flock.FlockId || flock.flockId,
+      userId: flock.UserId || flock.userId,
+      farmId: flock.FarmId || flock.farmId,
+      name: flock.Name || flock.name,
+      breed: flock.Breed || flock.breed,
+      startDate: flock.StartDate || flock.startDate,
+      quantity: flock.Quantity || flock.quantity,
+      active: flock.Active !== undefined ? flock.Active : (flock.active !== undefined ? flock.active : true),
+      houseId: flock.HouseId || flock.houseId || null,
+      batchId: flock.BatchId || flock.batchId || null,
+      batchName: flock.BatchName || flock.batchName || null,
+      inactivationReason: flock.InactivationReason || flock.inactivationReason || null,
+      otherReason: flock.OtherReason || flock.otherReason || null,
+      notes: flock.Notes || flock.notes || null,
+    }))
+
+    console.log("[v0] Mapped flocks count:", mappedData.length)
+    if (mappedData.length > 0) {
+      console.log("[v0] Sample mapped flock:", mappedData[0])
+    }
+
     return {
       success: true,
       message: "Flocks fetched successfully",
-      data: data as Flock[],
+      data: mappedData as Flock[],
     }
   } catch (error) {
     console.error("[v0] Flocks fetch error:", error)

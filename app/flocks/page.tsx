@@ -119,24 +119,46 @@ export default function FlocksPage() {
     const { farmId, userId } = getUserContext()
     
     if (!farmId || !userId) {
+      console.error("[FlocksPage] Missing userId or farmId:", { userId, farmId })
       setError("Farm ID or User ID not found")
       setLoading(false)
       return
     }
 
-    console.log("[FlocksPage] Loading flocks for userId:", userId, "farmId:", farmId)
+    console.log("[FlocksPage] ========================================")
+    console.log("[FlocksPage] Loading flocks for:")
+    console.log("[FlocksPage]   userId:", userId)
+    console.log("[FlocksPage]   farmId:", farmId)
+    console.log("[FlocksPage] ========================================")
+    
     const result = await getFlocks(userId, farmId)
-    console.log("[FlocksPage] Flocks result:", result)
+    console.log("[FlocksPage] API Result:", {
+      success: result.success,
+      message: result.message,
+      dataLength: result.data?.length || 0,
+      data: result.data
+    })
     
     if (result.success) {
       // Handle both empty arrays and undefined/null
       const flocksData = result.data || []
       console.log("[FlocksPage] Setting flocks:", flocksData.length, "items")
+      
+      if (flocksData.length > 0) {
+        console.log("[FlocksPage] Sample flock:", flocksData[0])
+        console.log("[FlocksPage] All flock userIds:", flocksData.map(f => f.userId))
+        console.log("[FlocksPage] All flock farmIds:", flocksData.map(f => f.farmId))
+      } else {
+        console.warn("[FlocksPage] No flocks returned from API")
+        console.warn("[FlocksPage] This could mean:")
+        console.warn("[FlocksPage]   1. No flocks exist with userId:", userId, "and farmId:", farmId)
+        console.warn("[FlocksPage]   2. The stored procedure is filtering them out")
+        console.warn("[FlocksPage]   3. The API returned an empty array")
+        console.warn("[FlocksPage] Check the database to verify flocks exist with matching userId/farmId")
+      }
+      
       setFlocks(Array.isArray(flocksData) ? flocksData : [])
       setCurrentPage(1)
-      if (flocksData.length === 0) {
-        console.log("[FlocksPage] No flocks found - this might be normal if no flocks exist yet")
-      }
     } else {
       console.error("[FlocksPage] Failed to load flocks:", result.message)
       setError(result.message || "Failed to load flocks")
