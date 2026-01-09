@@ -121,5 +121,22 @@ export async function updateHouse(id: number, input: HouseInput): Promise<ApiRes
 
 // DELETE /api/House/{id}?userId=&farmId={}
 export async function deleteHouse(id: number, userId: string, farmId: string): Promise<ApiResponse<void>> {
+  // SECURITY: Validate required parameters before proceeding
+  if (!userId || !farmId) {
+    console.error("[v0] Security: Missing userId or farmId for house deletion");
+    return {
+      success: false,
+      message: "Authorization required. Please log in again.",
+    } as any;
+  }
+  
+  if (!id || !Number.isFinite(id) || id <= 0) {
+    console.error("[v0] Security: Invalid house ID");
+    return {
+      success: false,
+      message: "Invalid house ID",
+    } as any;
+  }
+  
   return request<void>(`/api/House/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`, { method: 'DELETE' })
 }

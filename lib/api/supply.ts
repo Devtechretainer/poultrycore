@@ -187,6 +187,23 @@ export async function updateSupply(id: number, input: SupplyInput): Promise<ApiR
 
 export async function deleteSupply(id: number, userId: string, farmId: string): Promise<ApiResponse<void>> {
   try {
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error('[v0] Security: Missing userId or farmId for supply deletion');
+      return {
+        success: false,
+        message: 'Authorization required. Please log in again.',
+      };
+    }
+    
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error('[v0] Security: Invalid supply ID');
+      return {
+        success: false,
+        message: 'Invalid supply ID',
+      };
+    }
+    
     const endpoint = `/Supply/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log('[v0] Deleting supply:', url)

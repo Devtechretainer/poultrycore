@@ -260,19 +260,11 @@ export async function createProductionRecord(record: ProductionRecordInput) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] Production record create error:", errorText)
-      console.log("[v0] Using mock data for production record creation")
-      
-      const newRecord: ProductionRecord = {
-        ...record,
-        id: nextRecordId++,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as any
-      mockProductionRecords.push(newRecord)
-      
+      // SECURITY: Removed mock data modification - no client-side data creation
+      // All data operations must go through backend for proper validation and security
       return {
-        success: true,
-        message: "Production record created successfully (mock data)",
+        success: false,
+        message: errorText || "Failed to create production record. Backend validation required.",
       }
     }
 
@@ -294,19 +286,10 @@ export async function createProductionRecord(record: ProductionRecordInput) {
     }
   } catch (error) {
     console.error("[v0] Production record create error:", error)
-    console.log("[v0] Using mock data for production record creation")
-    
-    const newRecord: ProductionRecord = {
-      ...record,
-      id: nextRecordId++,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as any
-    mockProductionRecords.push(newRecord)
-    
+    // SECURITY: Removed mock data modification - no client-side data creation
     return {
-      success: true,
-      message: "Production record created successfully (mock data)",
+      success: false,
+      message: "Network error. Please try again.",
     }
   }
 }
@@ -381,6 +364,23 @@ export async function updateProductionRecord(id: number, record: ProductionRecor
 
 export async function deleteProductionRecord(id: number, userId: string, farmId: string) {
   try {
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for production record deletion")
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      }
+    }
+    
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error("[v0] Security: Invalid production record ID")
+      return {
+        success: false,
+        message: "Invalid production record ID",
+      }
+    }
+    
     const url = `${API_BASE_URL}/api/ProductionRecord/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     console.log("[v0] Deleting production record:", url)
 
@@ -389,6 +389,7 @@ export async function deleteProductionRecord(id: number, userId: string, farmId:
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       mode: 'cors',
     })

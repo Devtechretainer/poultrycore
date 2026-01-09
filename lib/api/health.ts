@@ -158,6 +158,23 @@ export async function deleteHealthRecord(
   userId: string,
   farmId: string
 ): Promise<ApiResponse<void>> {
+  // SECURITY: Validate required parameters before proceeding
+  if (!userId || !farmId) {
+    console.error("[v0] Security: Missing userId or farmId for health record deletion");
+    return {
+      success: false,
+      message: "Authorization required. Please log in again.",
+    } as any;
+  }
+  
+  if (!id || !Number.isFinite(id) || id <= 0) {
+    console.error("[v0] Security: Invalid health record ID");
+    return {
+      success: false,
+      message: "Invalid health record ID",
+    } as any;
+  }
+  
   return request<void>(`/Health/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`, {
     method: 'DELETE',
   })

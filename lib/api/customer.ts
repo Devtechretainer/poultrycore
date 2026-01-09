@@ -224,19 +224,11 @@ export async function createCustomer(customer: CustomerInput) {
         const errorText = await response.text()
         console.warn("[v0] Customer create error:", response.status, errorText)
       }
-      console.log("[v0] Using mock data for customer creation")
-      
-      // Add to mock data
-      const newCustomer: Customer = {
-        ...customer,
-        customerId: nextCustomerId++,
-        createdDate: new Date().toISOString(),
-      }
-      mockCustomers.push(newCustomer)
-      
+      // SECURITY: Removed mock data modification - no client-side data creation
+      // All data operations must go through backend for proper validation and security
       return {
-        success: true,
-        message: "Customer created successfully (mock data)",
+        success: false,
+        message: errorText || "Failed to create customer. Backend validation required.",
       }
     }
 
@@ -246,19 +238,10 @@ export async function createCustomer(customer: CustomerInput) {
     }
   } catch (error) {
     console.error("[v0] Customer create error:", error)
-    console.log("[v0] Using mock data for customer creation")
-    
-    // Add to mock data
-    const newCustomer: Customer = {
-      ...customer,
-      customerId: nextCustomerId++,
-      createdDate: new Date().toISOString(),
-    }
-    mockCustomers.push(newCustomer)
-    
+    // SECURITY: Removed mock data modification - no client-side data creation
     return {
-      success: true,
-      message: "Customer created successfully (mock data)",
+      success: false,
+      message: "Network error. Please try again.",
     }
   }
 }
@@ -287,24 +270,11 @@ export async function updateCustomer(id: number, customer: CustomerInput) {
         const errorText = await response.text()
         console.warn("[v0] Customer update error:", response.status, errorText)
       }
-      console.log("[v0] Using mock data for customer update")
-      
-      // Update in mock data
-      const index = mockCustomers.findIndex(c => c.customerId === id)
-      if (index !== -1) {
-        mockCustomers[index] = {
-          ...mockCustomers[index],
-          ...customer,
-        }
-        return {
-          success: true,
-          message: "Customer updated successfully (mock data)",
-        }
-      } else {
-        return {
-          success: false,
-          message: "Customer not found",
-        }
+      // SECURITY: Removed mock data modification - no client-side data updates
+      // All data operations must go through backend for proper validation and security
+      return {
+        success: false,
+        message: errorText || "Failed to update customer. Backend validation required.",
       }
     }
 
@@ -314,30 +284,33 @@ export async function updateCustomer(id: number, customer: CustomerInput) {
     }
   } catch (error) {
     console.error("[v0] Customer update error:", error)
-    console.log("[v0] Using mock data for customer update")
-    
-    // Update in mock data
-    const index = mockCustomers.findIndex(c => c.customerId === id)
-    if (index !== -1) {
-      mockCustomers[index] = {
-        ...mockCustomers[index],
-        ...customer,
-      }
-      return {
-        success: true,
-        message: "Customer updated successfully (mock data)",
-      }
-    } else {
-      return {
-        success: false,
-        message: "Customer not found",
-      }
+    // SECURITY: Removed mock data modification - no client-side data updates
+    return {
+      success: false,
+      message: "Network error. Please try again.",
     }
   }
 }
 
 export async function deleteCustomer(id: number, userId: string, farmId: string) {
   try {
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for customer deletion")
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      }
+    }
+    
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error("[v0] Security: Invalid customer ID")
+      return {
+        success: false,
+        message: "Invalid customer ID",
+      }
+    }
+    
     const endpoint = `/Customer/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Deleting customer:", url)
@@ -348,28 +321,12 @@ export async function deleteCustomer(id: number, userId: string, farmId: string)
     })
 
     if (!response.ok) {
-      // Handle 404 gracefully - endpoint might not exist on backend
-      if (response.status === 404) {
-        console.log("[v0] Customer endpoint not available (404), using mock data")
-      } else {
-        const errorText = await response.text()
-        console.warn("[v0] Customer delete error:", response.status, errorText)
-      }
-      console.log("[v0] Using mock data for customer deletion")
-      
-      // Remove from mock data
-      const index = mockCustomers.findIndex(c => c.customerId === id)
-      if (index !== -1) {
-        mockCustomers.splice(index, 1)
-        return {
-          success: true,
-          message: "Customer deleted successfully (mock data)",
-        }
-      } else {
-        return {
-          success: false,
-          message: "Customer not found",
-        }
+      // SECURITY: Removed mock data fallback - no client-side data manipulation
+      const errorText = await response.text()
+      console.error("[v0] Customer delete error:", response.status, errorText)
+      return {
+        success: false,
+        message: errorText || "Failed to delete customer",
       }
     }
 
@@ -379,21 +336,9 @@ export async function deleteCustomer(id: number, userId: string, farmId: string)
     }
   } catch (error) {
     console.error("[v0] Customer delete error:", error)
-    console.log("[v0] Using mock data for customer deletion")
-    
-    // Remove from mock data
-    const index = mockCustomers.findIndex(c => c.customerId === id)
-    if (index !== -1) {
-      mockCustomers.splice(index, 1)
-      return {
-        success: true,
-        message: "Customer deleted successfully (mock data)",
-      }
-    } else {
-      return {
-        success: false,
-        message: "Customer not found",
-      }
+    return {
+      success: false,
+      message: "Network error. Please try again.",
     }
   }
 }

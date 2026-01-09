@@ -364,20 +364,31 @@ export async function updateExpense(id: number, expense: Partial<ExpenseInput>):
 // Delete expense
 export async function deleteExpense(id: number, userId?: string, farmId?: string): Promise<ApiResponse> {
   try {
-    if (!Number.isFinite(id)) {
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for expense deletion")
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      }
+    }
+    
+    if (!Number.isFinite(id) || id <= 0) {
       return { success: false, message: "Invalid expense id" }
     }
-    const params = new URLSearchParams()
-    if (userId) params.append('userId', userId)
-    if (farmId) params.append('farmId', farmId)
     
-    const url = `${API_BASE_URL}/api/Expense/${id}${params.toString() ? '?' + params.toString() : ''}`
+    const params = new URLSearchParams()
+    params.append('userId', userId)
+    params.append('farmId', farmId)
+    
+    const url = `${API_BASE_URL}/api/Expense/${id}?${params.toString()}`
     console.log("[v0] Deleting expense:", url)
 
     const response = await fetch(url, {
       method: "DELETE",
       headers: {
-        Accept: "application/json, text/plain;q=0.9, */*;q=0.8",
+        Accept: "application/json",
+        ...getAuthHeaders(),
       },
     })
 

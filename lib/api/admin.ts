@@ -392,8 +392,31 @@ export async function updateEmployee(id: string, data: UpdateEmployeeData): Prom
 }
 
 // Delete employee
+// SECURITY: This operation requires admin privileges and should only be called from admin-protected pages
 export async function deleteEmployee(id: string): Promise<ApiResponse> {
   try {
+    // SECURITY: Validate required parameters
+    if (!id || id.trim() === '') {
+      console.error("[Admin API] Security: Invalid employee ID")
+      return {
+        success: false,
+        message: "Invalid employee ID",
+      }
+    }
+    
+    // SECURITY: Verify user context exists (should be checked by calling component)
+    if (typeof window !== 'undefined') {
+      const userId = localStorage.getItem('userId')
+      const farmId = localStorage.getItem('farmId')
+      if (!userId || !farmId) {
+        console.error("[Admin API] Security: Missing user context")
+        return {
+          success: false,
+          message: "Authorization required. Please log in again.",
+        }
+      }
+    }
+    
     const url = buildAdminApiUrl(`/Admin/employees/${id}`)
     console.log("[Admin API] Deleting employee:", url)
 

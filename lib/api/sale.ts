@@ -469,21 +469,12 @@ export async function createSale(sale: SaleInput): Promise<ApiResponse<Sale>> {
     
     if (!response.ok) {
       console.error("[v0] Sale create error:", responseText)
-      console.log("[v0] Using mock data for sale creation")
-      
-      const newSale: Sale = {
-        ...sale,
-        farmId,
-        userId,
-        saleId: nextSaleId++,
-        createdDate: new Date().toISOString(),
-      }
-      mockSales.push(newSale)
-      
+      // SECURITY: Removed mock data modification - no client-side data creation
+      // All data operations must go through backend for proper validation and security
       return {
-        success: true,
-        message: "Sale created successfully (mock data - API failed)",
-        data: newSale,
+        success: false,
+        message: errorText || "Failed to create sale. Backend validation required.",
+        data: null as any,
       }
     }
 
@@ -509,16 +500,14 @@ export async function createSale(sale: SaleInput): Promise<ApiResponse<Sale>> {
       }
     }
 
-    // If still no data and not successful, use mock data
+    // SECURITY: Removed mock data fallback - all operations must succeed through backend
     if (!data) {
-      console.log("[v0] Using mock data for sale creation")
-      data = {
-        ...sale,
-        farmId,
-        userId,
-        saleId: nextSaleId++,
-        createdDate: new Date().toISOString(),
-      } as Sale
+      console.error("[v0] Sale creation failed - no data returned")
+      return {
+        success: false,
+        message: "Failed to create sale. No response from server.",
+        data: null as any,
+      }
     }
 
     console.log("[v0] Created sale data:", data)
@@ -530,21 +519,11 @@ export async function createSale(sale: SaleInput): Promise<ApiResponse<Sale>> {
     }
   } catch (error) {
     console.error("[v0] Sale create error:", error)
-    console.log("[v0] Using mock data for sale creation")
-    
-    const newSale: Sale = {
-      ...sale,
-      farmId: sale.farmId || "test-farm-123",
-      userId: sale.userId || "test-user-456",
-      saleId: nextSaleId++,
-      createdDate: new Date().toISOString(),
-    }
-    mockSales.push(newSale)
-    
+    // SECURITY: Removed mock data modification - no client-side data creation
     return {
-      success: true,
-      message: "Sale created successfully (mock data - error occurred)",
-      data: newSale,
+      success: false,
+      message: "Network error. Please try again.",
+      data: null as any,
     }
   }
 }
@@ -635,17 +614,35 @@ export async function updateSale(id: number, sale: Partial<SaleInput>): Promise<
 // Delete sale
 export async function deleteSale(id: number, userId?: string, farmId?: string): Promise<ApiResponse> {
   try {
-    const params = new URLSearchParams()
-    if (userId) params.append('userId', userId)
-    if (farmId) params.append('farmId', farmId)
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for sale deletion")
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      }
+    }
     
-    const url = `${API_BASE_URL}/api/Sale/${id}${params.toString() ? '?' + params.toString() : ''}`
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error("[v0] Security: Invalid sale ID")
+      return {
+        success: false,
+        message: "Invalid sale ID",
+      }
+    }
+    
+    const params = new URLSearchParams()
+    params.append('userId', userId)
+    params.append('farmId', farmId)
+    
+    const url = `${API_BASE_URL}/api/Sale/${id}?${params.toString()}`
     console.log("[v0] Deleting sale:", url)
 
     const response = await fetch(url, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
+        ...getAuthHeaders(),
       },
     })
 
@@ -656,17 +653,11 @@ export async function deleteSale(id: number, userId?: string, farmId?: string): 
       console.error("[v0] Sale delete error:", errorText)
       return {
         success: false,
-        message: "Failed to delete sale",
+        message: errorText || "Failed to delete sale",
       }
     }
 
-    // Remove from mock data if it exists
-    const mockIndex = mockSales.findIndex(s => s.saleId === id)
-    if (mockIndex !== -1) {
-      mockSales.splice(mockIndex, 1)
-      console.log("[v0] Removed sale from mock data with ID:", id)
-    }
-
+    // SECURITY: Removed mock data manipulation - no client-side data modification
     return {
       success: true,
       message: "Sale deleted successfully",
@@ -679,3 +670,4 @@ export async function deleteSale(id: number, userId?: string, farmId?: string): 
     }
   }
 }
+

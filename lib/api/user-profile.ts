@@ -246,40 +246,7 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<ApiRes
   }
 }
 
-// Delete user profile
-export async function deleteUserProfile(id: string): Promise<ApiResponse> {
-  try {
-    console.log("[v0] Deleting user profile:", id)
-    const token = getAuthToken()
-
-    const response = await fetch(`${API_BASE_URL}/api/UserProfile/${id}`, {
-      method: "DELETE",
-      headers: {
-        accept: "*/*",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    })
-
-    console.log("[v0] Delete profile response status:", response.status)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Delete profile error:", errorText)
-      return {
-        success: false,
-        message: "Failed to delete profile",
-      }
-    }
-
-    return {
-      success: true,
-      message: "Profile deleted successfully",
-    }
-  } catch (error) {
-    console.error("[v0] Network error deleting profile:", error)
-    return {
-      success: false,
-      message: "Network error. Please try again.",
-    }
-  }
-}
+// SECURITY: User profile deletion removed from frontend
+// User deletion must be performed by admin through backend only
+// This prevents unauthorized user deletion attacks
+// If needed, implement as admin-only backend operation with proper authorization

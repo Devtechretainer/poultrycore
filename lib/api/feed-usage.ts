@@ -255,14 +255,9 @@ export async function createFeedUsage(usage: FeedUsageInput) {
       console.log("[v0] - username:", localStorage.getItem("username"))
       console.log("[v0] - farmName:", localStorage.getItem("farmName"))
       
-      // If still empty, try to set some test values for debugging
-      if (!farmId && !userId) {
-        console.log("[v0] Setting test values for debugging")
-        localStorage.setItem("farmId", "test-farm-123")
-        localStorage.setItem("userId", "test-user-456")
-        farmId = "test-farm-123"
-        userId = "test-user-456"
-      }
+      // SECURITY: Removed test value injection
+      // Never set test values in production - this is a security risk
+      // If farmId/userId is missing, fail gracefully
     }
 
     // Validate required fields
@@ -457,6 +452,23 @@ export async function updateFeedUsage(id: number, usage: Partial<FeedUsageInput>
 
 export async function deleteFeedUsage(id: number, userId: string, farmId: string) {
   try {
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for feed usage deletion");
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      };
+    }
+    
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error("[v0] Security: Invalid feed usage ID");
+      return {
+        success: false,
+        message: "Invalid feed usage ID",
+      };
+    }
+    
     // API expects farmId (lowercase) in query parameters
     const url = `${API_BASE_URL}/api/FeedUsage/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     console.log("[v0] Deleting feed usage:", url)
@@ -465,6 +477,7 @@ export async function deleteFeedUsage(id: number, userId: string, farmId: string
       method: "DELETE",
       headers: {
         Accept: "application/json",
+        ...getAuthHeaders(),
       },
     })
 

@@ -148,26 +148,82 @@ export default function FlocksPage() {
       // Ensure only flocks belonging to the current farm are displayed
       if (farmId && flocksData.length > 0) {
         const beforeFilter = flocksData.length
+        const currentFarmId = String(farmId || '').trim().toLowerCase()
+        
+        console.log("[FlocksPage] ===== ADDITIONAL CLIENT-SIDE FILTER =====")
+        console.log("[FlocksPage] Current farmId:", currentFarmId, "Type:", typeof farmId)
+        console.log("[FlocksPage] Flocks before filter:", beforeFilter)
+        
+        // Show unique farmIds in the data
+        const uniqueFarmIds = [...new Set(flocksData.map(f => String(f.farmId || '').trim().toLowerCase()))]
+        console.log("[FlocksPage] Unique farmIds in received data:", uniqueFarmIds)
+        
         flocksData = flocksData.filter(flock => {
-          const flockFarmId = String(flock.farmId || '')
-          const currentFarmId = String(farmId)
+          const flockFarmId = String(flock.farmId || '').trim().toLowerCase()
           const matches = flockFarmId === currentFarmId
+          
           if (!matches) {
-            console.warn("[FlocksPage] Filtered out flock:", flock.name, "farmId:", flock.farmId, "does not match:", farmId)
+            console.warn("[FlocksPage] ❌ Filtered out flock:", {
+              name: flock.name,
+              flockId: flock.flockId,
+              flockFarmId: flockFarmId,
+              currentFarmId: currentFarmId,
+              match: matches
+            })
+          } else {
+            if (flocksData.length <= 5) {
+              console.log("[FlocksPage] ✅ Keeping flock:", {
+                name: flock.name,
+                flockId: flock.flockId,
+                flockFarmId: flockFarmId,
+                currentFarmId: currentFarmId
+              })
+            }
           }
+          
           return matches
         })
-        console.log("[FlocksPage] Filtered by farmId:", farmId, "Before:", beforeFilter, "After:", flocksData.length)
+        
+        console.log("[FlocksPage] Flocks after filter:", flocksData.length)
+        console.log("[FlocksPage] Filtered out:", beforeFilter - flocksData.length, "flocks")
+        console.log("[FlocksPage] ===========================================")
         
         if (beforeFilter > flocksData.length) {
-          console.warn("[FlocksPage] Warning: Backend returned", beforeFilter - flocksData.length, "flocks that don't belong to current farmId:", farmId)
+          console.error("[FlocksPage] ⚠️ ERROR: Backend returned", beforeFilter - flocksData.length, "flocks that don't belong to current farmId:", farmId)
+          console.error("[FlocksPage] This indicates the backend is not filtering correctly by farmId!")
+        }
+        
+        // Final verification - ensure ALL remaining flocks match
+        const invalidFlocks = flocksData.filter(f => String(f.farmId || '').trim().toLowerCase() !== currentFarmId)
+        if (invalidFlocks.length > 0) {
+          console.error("[FlocksPage] ⚠️ CRITICAL ERROR: Found", invalidFlocks.length, "flocks with incorrect farmId after filtering!")
+          console.error("[FlocksPage] Invalid flocks:", invalidFlocks.map(f => ({ name: f.name, farmId: f.farmId })))
+          // Remove them anyway
+          flocksData = flocksData.filter(f => String(f.farmId || '').trim().toLowerCase() === currentFarmId)
         }
       }
       
       if (flocksData.length > 0) {
         console.log("[FlocksPage] Sample flock:", flocksData[0])
         console.log("[FlocksPage] All flock userIds:", flocksData.map(f => f.userId))
-        console.log("[FlocksPage] All flock farmIds:", flocksData.map(f => f.farmId))
+        
+        // CRITICAL: Show all farmIds to verify if they're all the same
+        const allFarmIds = flocksData.map(f => f.farmId)
+        const uniqueFarmIds = [...new Set(allFarmIds)]
+        console.log("[FlocksPage] 🔍🔍🔍 ALL FARMIDS IN DATA:", allFarmIds)
+        console.log("[FlocksPage] 🔍🔍🔍 UNIQUE FARMIDS:", uniqueFarmIds)
+        console.log("[FlocksPage] 🔍🔍🔍 NUMBER OF UNIQUE FARMIDS:", uniqueFarmIds.length)
+        console.log("[FlocksPage] 🔍🔍🔍 CURRENT FARMID:", farmId)
+        
+        if (uniqueFarmIds.length > 1) {
+          console.error("[FlocksPage] ⚠️⚠️⚠️ CRITICAL: Backend returned flocks from MULTIPLE farms!")
+          // Count how many flocks per farmId
+          const countsByFarmId: Record<string, number> = {}
+          allFarmIds.forEach((fid: string) => {
+            countsByFarmId[fid] = (countsByFarmId[fid] || 0) + 1
+          })
+          console.error("[FlocksPage] Flocks per farmId:", countsByFarmId)
+        }
         
         // Verify all flocks belong to the correct farm
         const invalidFlocks = flocksData.filter(f => String(f.farmId) !== String(farmId))

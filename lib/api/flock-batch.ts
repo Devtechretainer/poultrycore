@@ -129,6 +129,23 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
   
   export async function deleteFlockBatch(batchId: number, userId: string, farmId: string): Promise<ApiResponse> {
     try {
+      // SECURITY: Validate required parameters before proceeding
+      if (!userId || !farmId) {
+        console.error("[v0] Security: Missing userId or farmId for flock batch deletion");
+        return {
+          success: false,
+          message: "Authorization required. Please log in again.",
+        };
+      }
+      
+      if (!batchId || !Number.isFinite(batchId) || batchId <= 0) {
+        console.error("[v0] Security: Invalid flock batch ID");
+        return {
+          success: false,
+          message: "Invalid flock batch ID",
+        };
+      }
+      
       const params = new URLSearchParams();
       params.append('userId', userId);
       params.append('farmId', farmId);

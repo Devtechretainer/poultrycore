@@ -173,46 +173,139 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
     }
 
     // Map backend PascalCase to frontend camelCase if needed
-    const mappedData = (data as any[]).map((flock: any) => ({
-      flockId: flock.FlockId || flock.flockId,
-      userId: flock.UserId || flock.userId,
-      farmId: flock.FarmId || flock.farmId,
-      name: flock.Name || flock.name,
-      breed: flock.Breed || flock.breed,
-      startDate: flock.StartDate || flock.startDate,
-      quantity: flock.Quantity || flock.quantity,
-      active: flock.Active !== undefined ? flock.Active : (flock.active !== undefined ? flock.active : true),
-      houseId: flock.HouseId || flock.houseId || null,
-      batchId: flock.BatchId || flock.batchId || null,
-      batchName: flock.BatchName || flock.batchName || null,
-      inactivationReason: flock.InactivationReason || flock.inactivationReason || null,
-      otherReason: flock.OtherReason || flock.otherReason || null,
-      notes: flock.Notes || flock.notes || null,
-    }))
+    const mappedData = (data as any[]).map((flock: any) => {
+      // Extract farmId - check both PascalCase and camelCase, and ensure we get a value
+      const extractedFarmId = flock.FarmId ?? flock.farmId ?? flock.FarmID ?? flock.farmID ?? null
+      const extractedUserId = flock.UserId ?? flock.userId ?? flock.UserID ?? flock.userID ?? null
+      
+      // Log if farmId is missing
+      if (!extractedFarmId) {
+        console.warn("[v0] WARNING: Flock missing farmId:", {
+          flockId: flock.FlockId || flock.flockId,
+          name: flock.Name || flock.name,
+          rawFlock: flock
+        })
+      }
+      
+      return {
+        flockId: flock.FlockId || flock.flockId,
+        userId: extractedUserId,
+        farmId: extractedFarmId || '', // Ensure farmId is never null/undefined
+        name: flock.Name || flock.name,
+        breed: flock.Breed || flock.breed,
+        startDate: flock.StartDate || flock.startDate,
+        quantity: flock.Quantity || flock.quantity,
+        active: flock.Active !== undefined ? flock.Active : (flock.active !== undefined ? flock.active : true),
+        houseId: flock.HouseId || flock.houseId || null,
+        batchId: flock.BatchId || flock.batchId || null,
+        batchName: flock.BatchName || flock.batchName || null,
+        inactivationReason: flock.InactivationReason || flock.inactivationReason || null,
+        otherReason: flock.OtherReason || flock.otherReason || null,
+        notes: flock.Notes || flock.notes || null,
+      }
+    })
 
     console.log("[v0] Mapped flocks count:", mappedData.length)
     if (mappedData.length > 0) {
       console.log("[v0] Sample mapped flock:", mappedData[0])
+      
+      // CRITICAL: Log all unique farmIds to see if they're all the same
+      const allFarmIds = mappedData.map((f: any) => f.farmId)
+      const uniqueFarmIds = [...new Set(allFarmIds)]
+      console.log("[v0] 🔍 CRITICAL DEBUG - All farmIds in response:", allFarmIds)
+      console.log("[v0] 🔍 CRITICAL DEBUG - Unique farmIds:", uniqueFarmIds)
+      console.log("[v0] 🔍 CRITICAL DEBUG - Number of unique farmIds:", uniqueFarmIds.length)
+      
+      if (uniqueFarmIds.length > 1) {
+        console.error("[v0] ⚠️⚠️⚠️ ERROR: Backend returned flocks from MULTIPLE farms!")
+        console.error("[v0] Unique farmIds found:", uniqueFarmIds)
+        // Count flocks per farmId
+        const countsByFarmId: Record<string, number> = {}
+        allFarmIds.forEach((fid: string) => {
+          countsByFarmId[fid] = (countsByFarmId[fid] || 0) + 1
+        })
+        console.error("[v0] Flocks per farmId:", countsByFarmId)
+      }
     }
 
     // Filter by farmId and userId on the frontend as a safeguard
     // This ensures we only return flocks for the current farm, even if the backend returns all
     let filteredData = mappedData
-    if (farmId) {
-      filteredData = filteredData.filter((flock: any) => {
-        const flockFarmId = String(flock.farmId || '')
-        const requestedFarmId = String(farmId)
-        return flockFarmId === requestedFarmId
-      })
-      console.log("[v0] Filtered by farmId:", farmId, "Result count:", filteredData.length)
+    const originalCount = mappedData.length
+    
+    if (!farmId || farmId.trim() === '') {
+      console.error("[v0] ⚠️ ERROR: No farmId provided for filtering! Returning empty array for security.")
+      console.error("[v0] This should not happen - please check that farmId is set in localStorage")
+      return {
+        success: true,
+        message: "No farmId provided - cannot filter flocks",
+        data: [],
+      }
     }
-    if (userId) {
+    
+    // Normalize farmId - trim whitespace and convert to string for comparison
+    const requestedFarmId = String(farmId || '').trim().toLowerCase()
+    
+    console.log("[v0] ===== FILTERING BY FARMID =====")
+    console.log("[v0] Requested farmId:", requestedFarmId, "Type:", typeof farmId, "Length:", requestedFarmId.length)
+    console.log("[v0] Before filter count:", filteredData.length)
+    
+    // Show sample farmIds from data
+    const uniqueFarmIds = [...new Set(mappedData.map((f: any) => {
+      const fid = String(f.farmId || '').trim().toLowerCase()
+      return fid || '(empty/null)'
+    }))]
+    console.log("[v0] Unique farmIds in data:", uniqueFarmIds)
+    console.log("[v0] Number of unique farmIds:", uniqueFarmIds.length)
+    
+    // Filter by farmId
+    filteredData = filteredData.filter((flock: any) => {
+      const flockFarmId = String(flock.farmId || '').trim().toLowerCase()
+      const matches = flockFarmId === requestedFarmId && flockFarmId !== '' && requestedFarmId !== ''
+      
+      if (!matches) {
+        console.warn("[v0] ❌ Filtered out flock:", {
+          name: flock.name || '(no name)',
+          flockId: flock.flockId,
+          flockFarmId: flockFarmId || '(empty)',
+          requestedFarmId: requestedFarmId,
+          match: matches,
+          flockFarmIdLength: flockFarmId.length,
+          requestedFarmIdLength: requestedFarmId.length
+        })
+      }
+      
+      return matches
+    })
+    
+    console.log("[v0] After farmId filter count:", filteredData.length)
+    console.log("[v0] Filtered out:", originalCount - filteredData.length, "flocks")
+    console.log("[v0] ================================")
+    
+    if (filteredData.length < originalCount) {
+      console.warn("[v0] ⚠️ WARNING: Backend returned", originalCount - filteredData.length, "flocks from other farms!")
+      console.warn("[v0] Backend should filter by farmId on the server side")
+    }
+    
+    if (filteredData.length === 0 && originalCount > 0) {
+      console.error("[v0] ⚠️ ERROR: All flocks were filtered out!")
+      console.error("[v0] This could mean:")
+      console.error("[v0]   1. farmId in localStorage doesn't match farmId in database")
+      console.error("[v0]   2. farmId format is different (e.g., GUID vs number)")
+      console.error("[v0]   3. Backend is returning flocks with null/empty farmId")
+    }
+    
+    if (userId && filteredData.length > 0) {
+      // Normalize userId - trim whitespace and convert to string for comparison
+      const requestedUserId = String(userId || '').trim().toLowerCase()
+      const beforeUserIdFilter = filteredData.length
+      
       filteredData = filteredData.filter((flock: any) => {
-        const flockUserId = String(flock.userId || '')
-        const requestedUserId = String(userId)
+        const flockUserId = String(flock.userId || '').trim().toLowerCase()
         return flockUserId === requestedUserId
       })
-      console.log("[v0] Filtered by userId:", userId, "Result count:", filteredData.length)
+      
+      console.log("[v0] After userId filter count:", filteredData.length, "(filtered out:", beforeUserIdFilter - filteredData.length, ")")
     }
 
     return {
@@ -388,36 +481,23 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] Flock create error:", errorText)
-      console.log("[v0] Using mock data for flock creation")
-      
-      const newFlock: Flock = {
-        ...flock,
-        flockId: nextFlockId++,
-      }
-      mockFlocks.push(newFlock)
-      
+      // SECURITY: Removed mock data modification - no client-side data creation
+      // All data operations must go through backend for proper validation and security
       return {
-        success: true,
-        message: "Flock created successfully (mock data - API failed)",
-        data: newFlock,
+        success: false,
+        message: errorText || "Failed to create flock. Backend validation required.",
+        data: null as any,
       }
     }
 
     const contentType = response.headers.get("content-type")
     if (!contentType || !contentType.includes("application/json")) {
       console.error("[v0] Non-JSON response received")
-      console.log("[v0] Using mock data for flock creation")
-      
-      const newFlock: Flock = {
-        ...flock,
-        flockId: nextFlockId++,
-      }
-      mockFlocks.push(newFlock)
-      
+      // SECURITY: Removed mock data modification - no client-side data creation
       return {
-        success: true,
-        message: "Flock created successfully (mock data - non-JSON response)",
-        data: newFlock,
+        success: false,
+        message: "Invalid response from server. Please try again.",
+        data: null as any,
       }
     }
 
@@ -431,18 +511,11 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
     }
   } catch (error) {
     console.error("[v0] Flock create error:", error)
-    console.log("[v0] Using mock data for flock creation")
-    
-    const newFlock: Flock = {
-      ...flock,
-      flockId: nextFlockId++,
-    }
-    mockFlocks.push(newFlock)
-    
+    // SECURITY: Removed mock data modification - no client-side data creation
     return {
-      success: true,
-      message: "Flock created successfully (mock data - error occurred)",
-      data: newFlock,
+      success: false,
+      message: "Network error. Please try again.",
+      data: null as any,
     }
   }
 }
@@ -530,15 +603,32 @@ export async function updateFlock(id: number, flock: Partial<FlockInput>): Promi
 // Delete flock
 export async function deleteFlock(id: number, userId?: string, farmId?: string): Promise<ApiResponse> {
   try {
-    const params = new URLSearchParams()
-    if (userId) params.append('userId', userId)
-    if (farmId) params.append('farmId', farmId)
+    // SECURITY: Validate required parameters before proceeding
+    if (!userId || !farmId) {
+      console.error("[v0] Security: Missing userId or farmId for flock deletion")
+      return {
+        success: false,
+        message: "Authorization required. Please log in again.",
+      }
+    }
     
-    const endpoint = `/Flock/${id}${params.toString() ? '?' + params.toString() : ''}`
+    if (!id || !Number.isFinite(id) || id <= 0) {
+      console.error("[v0] Security: Invalid flock ID")
+      return {
+        success: false,
+        message: "Invalid flock ID",
+      }
+    }
+    
+    const params = new URLSearchParams()
+    params.append('userId', userId)
+    params.append('farmId', farmId)
+    
+    const endpoint = `/Flock/${id}?${params.toString()}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log("[v0] Deleting flock:", url)
 
-    console.log("id:", id, "userId:", userId, "farmId:", farmId)
+    console.log("[v0] Delete request - id:", id, "userId:", userId, "farmId:", farmId)
 
     const response = await fetch(url, {
       method: "DELETE",
