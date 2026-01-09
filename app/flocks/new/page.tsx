@@ -122,6 +122,15 @@ export default function NewFlockPage() {
       return
     }
 
+    // Validate that the selected batch still exists and has enough birds
+    if (selectedFlockBatch) {
+      const remainingBirds = selectedFlockBatch.numberOfBirds - formData.quantity
+      if (remainingBirds < 0) {
+        setError("Quantity exceeds available birds in the selected batch. Please select a different batch or reduce the quantity.")
+        return
+      }
+    }
+
     setLoading(true)
     setError("")
 
@@ -131,6 +140,9 @@ export default function NewFlockPage() {
       userId,
       otherReason: formData.inactivationReason === 'other' ? formData.otherReason : '',
     }
+
+    console.log("[NewFlockPage] Creating flock with data:", flockData)
+    console.log("[NewFlockPage] Selected batch:", selectedFlockBatch)
 
     const result = await createFlock(flockData)
 

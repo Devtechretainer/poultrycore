@@ -453,22 +453,62 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
       }
     }
 
+    // Format StartDate - ensure it has a time component if backend expects datetime
+    // Some backends expect full datetime strings (YYYY-MM-DDTHH:mm:ss) instead of just date
+    let formattedStartDate = flock.startDate
+    if (flock.startDate && !flock.startDate.includes('T')) {
+      // If it's just a date (YYYY-MM-DD), add time component (default to midnight UTC)
+      formattedStartDate = `${flock.startDate}T00:00:00`
+    }
+    
     // Create the request body with proper field names that match the API expectations
-    const requestBody = {
+    // Build request body, only including fields that have values (don't send null/undefined)
+    const requestBody: any = {
       FarmId: farmId, // API expects FarmId (capital F)
       UserId: userId,
       FlockId: 0, // Server will assign the ID
       Name: flock.name,
-      StartDate: flock.startDate,
+      StartDate: formattedStartDate,
       Breed: flock.breed,
       Quantity: flock.quantity,
       Active: flock.active,
-      HouseId: flock.houseId ?? null,
       BatchId: flock.batchId,
-      Notes: flock.notes ?? null,
+    }
+    
+    // Only add optional fields if they have values
+    if (flock.houseId != null && flock.houseId !== 0) {
+      requestBody.HouseId = flock.houseId
+    }
+    
+    if (flock.notes != null && flock.notes.trim() !== '') {
+      requestBody.Notes = flock.notes
+    }
+    
+    // Only include inactivation fields if the flock is inactive
+    if (!flock.active) {
+      if (flock.inactivationReason && flock.inactivationReason.trim() !== '') {
+        requestBody.InactivationReason = flock.inactivationReason
+      }
+      if (flock.inactivationReason === 'other' && flock.otherReason && flock.otherReason.trim() !== '') {
+        requestBody.OtherReason = flock.otherReason
+      }
     }
 
-    console.log("[v0] Flock request body:", requestBody)
+    console.log("[v0] Flock request body:", JSON.stringify(requestBody, null, 2))
+    console.log("[v0] Flock input fields:", {
+      farmId,
+      userId,
+      name: flock.name,
+      startDate: flock.startDate,
+      breed: flock.breed,
+      quantity: flock.quantity,
+      active: flock.active,
+      houseId: flock.houseId,
+      batchId: flock.batchId,
+      inactivationReason: flock.inactivationReason,
+      otherReason: flock.otherReason,
+      notes: flock.notes,
+    })
 
     const response = await fetch(url, {
       method: "POST",
@@ -477,15 +517,72 @@ export async function createFlock(flock: FlockInput): Promise<ApiResponse<Flock>
     })
 
     console.log("[v0] Flock create response status:", response.status)
+    console.log("[v0] Flock create response headers:", Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Flock create error:", errorText)
+      // Read response body once (can only be read once)
+      let errorMessage = `Failed to create flock (${response.status} ${response.statusText})`
+      
+      try {
+        // Read as text first (can only read once)
+        const errorText = await response.text()
+        console.error("[v0] Flock create error (raw response):", errorText)
+        console.error("[v0] Response status:", response.status)
+        console.error("[v0] Response headers:", Object.fromEntries(response.headers.entries()))
+        
+        // Try to parse as JSON if it looks like JSON
+        if (errorText.trim()) {
+          if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
+            try {
+              const errorJson = JSON.parse(errorText)
+              console.error("[v0] Flock create error (parsed JSON):", JSON.stringify(errorJson, null, 2))
+              
+              // Handle various error response formats
+              if (errorJson.title) {
+                errorMessage = errorJson.title
+                if (errorJson.detail) errorMessage += `: ${errorJson.detail}`
+                if (errorJson.errors && typeof errorJson.errors === 'object') {
+                  const validationErrors = Object.entries(errorJson.errors)
+                    .map(([field, messages]: [string, any]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+                    .join('; ')
+                  if (validationErrors) errorMessage += ` | Validation: ${validationErrors}`
+                }
+              } else if (errorJson.message) {
+                errorMessage = errorJson.message
+              } else if (errorJson.error) {
+                errorMessage = typeof errorJson.error === 'string' ? errorJson.error : JSON.stringify(errorJson.error)
+              } else if (Array.isArray(errorJson)) {
+                errorMessage = errorJson.map((err: any) => err.message || JSON.stringify(err)).join('; ')
+              } else if (Object.keys(errorJson).length === 0) {
+                errorMessage = `Backend validation error (${response.status}). Empty JSON response usually means: 1) Required fields missing, 2) Invalid BatchId, 3) Invalid FarmId/UserId, 4) Date format issue. Check console for request details.`
+              } else {
+                errorMessage = JSON.stringify(errorJson)
+              }
+            } catch (jsonError) {
+              // Not valid JSON, use as text
+              errorMessage = errorText || errorMessage
+            }
+          } else {
+            // Plain text error
+            errorMessage = errorText || errorMessage
+          }
+        } else {
+          // Empty response body
+          errorMessage = `Backend returned empty error response (${response.status} ${response.statusText}). This usually indicates a validation error. Please check: 1) All required fields are provided, 2) BatchId is valid and exists, 3) FarmId and UserId are correct, 4) Date format is correct (YYYY-MM-DD).`
+        }
+      } catch (readError) {
+        console.error("[v0] Could not read error response:", readError)
+        errorMessage = `Failed to read error response (${response.status} ${response.statusText})`
+      }
+      
+      console.error("[v0] Final error message:", errorMessage)
+      console.error("[v0] Request body that caused error:", JSON.stringify(requestBody, null, 2))
+      
       // SECURITY: Removed mock data modification - no client-side data creation
       // All data operations must go through backend for proper validation and security
       return {
         success: false,
-        message: errorText || "Failed to create flock. Backend validation required.",
+        message: errorMessage,
         data: null as any,
       }
     }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useMemo, useRef } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 export default function FlockBatchesPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const permissions = usePermissions()
   const [flockBatches, setFlockBatches] = useState<FlockBatch[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,10 +45,23 @@ export default function FlockBatchesPage() {
   const [selectedBatch, setSelectedBatch] = useState<FlockBatch | null>(null)
   const [batchFlocks, setBatchFlocks] = useState<Flock[]>([])
   const [loadingFlocks, setLoadingFlocks] = useState(false)
+  const lastPathnameRef = useRef<string | null>(null)
 
+  // Initial load
   useEffect(() => {
     loadFlockBatches()
+    lastPathnameRef.current = pathname
   }, [])
+
+  // Refresh when navigating back to this page (e.g., after creating a batch)
+  useEffect(() => {
+    // Only refresh if pathname changed to /flock-batch (navigated back to this page)
+    if (pathname === '/flock-batch' && lastPathnameRef.current !== pathname && lastPathnameRef.current !== null) {
+      console.log("[FlockBatchesPage] Navigated back to /flock-batch, refreshing batches...")
+      loadFlockBatches()
+    }
+    lastPathnameRef.current = pathname
+  }, [pathname])
 
   const loadFlockBatches = async () => {
     const { farmId, userId } = getUserContext()

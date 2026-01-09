@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
@@ -30,6 +30,7 @@ import { useMemo } from "react"
 
 export default function FlocksPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const permissions = usePermissions()
   const [flocks, setFlocks] = useState<Flock[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,10 +57,13 @@ export default function FlocksPage() {
   // Data for filter dropdowns
   const [houses, setHouses] = useState<House[]>([])
   const [flockBatches, setFlockBatches] = useState<FlockBatch[]>([])
+  const lastPathnameRef = useRef<string | null>(null)
 
+  // Initial load
   useEffect(() => {
     loadFlocks()
     loadFilterData()
+    lastPathnameRef.current = pathname
     
     // Check for global search query from header
     if (typeof window !== 'undefined') {
@@ -76,11 +80,23 @@ export default function FlocksPage() {
       }
       
       window.addEventListener('globalSearch', handleGlobalSearch as EventListener)
+      
       return () => {
         window.removeEventListener('globalSearch', handleGlobalSearch as EventListener)
       }
     }
   }, [])
+
+  // Refresh when navigating back to this page (e.g., after creating a flock)
+  useEffect(() => {
+    // Only refresh if pathname changed to /flocks (navigated back to this page)
+    if (pathname === '/flocks' && lastPathnameRef.current !== pathname && lastPathnameRef.current !== null) {
+      console.log("[FlocksPage] Navigated back to /flocks, refreshing flocks...")
+      loadFlocks()
+      loadFilterData()
+    }
+    lastPathnameRef.current = pathname
+  }, [pathname])
 
   const loadFilterData = async () => {
     const { userId, farmId } = getUserContext()

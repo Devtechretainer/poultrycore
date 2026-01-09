@@ -109,13 +109,10 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
     const data = await response.json();
     console.log("[v0] Flock batches data received:", data);
 
-    // Map response to handle both camelCase and PascalCase
-    const batches = Array.isArray(data) ? data.map(mapFlockBatch) : [];
-
     return {
       success: true,
       message: "Flock batches fetched successfully",
-      data: batches,
+      data: data as FlockBatch[],
     };
     } catch (error) {
       console.error("[v0] Flock batches fetch error:", error);
@@ -129,23 +126,6 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
   
   export async function deleteFlockBatch(batchId: number, userId: string, farmId: string): Promise<ApiResponse> {
     try {
-      // SECURITY: Validate required parameters before proceeding
-      if (!userId || !farmId) {
-        console.error("[v0] Security: Missing userId or farmId for flock batch deletion");
-        return {
-          success: false,
-          message: "Authorization required. Please log in again.",
-        };
-      }
-      
-      if (!batchId || !Number.isFinite(batchId) || batchId <= 0) {
-        console.error("[v0] Security: Invalid flock batch ID");
-        return {
-          success: false,
-          message: "Invalid flock batch ID",
-        };
-      }
-      
       const params = new URLSearchParams();
       params.append('userId', userId);
       params.append('farmId', farmId);
@@ -157,43 +137,9 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-
+  
       console.log("[v0] Flock batch delete response status:", response.status);
-
-      // Handle 204 No Content (successful delete) - no body to parse
-      if (response.status === 204) {
-        return {
-          success: true,
-          message: "Flock batch deleted successfully",
-        };
-      }
-
-      // Handle 200 OK with potential body
-      if (response.status === 200) {
-        // Try to read body if present, but don't fail if empty
-        try {
-          const text = await response.text();
-          if (text) {
-            try {
-              const data = JSON.parse(text);
-              return {
-                success: true,
-                message: data.message || "Flock batch deleted successfully",
-              };
-            } catch {
-              // Not JSON, that's fine
-            }
-          }
-        } catch {
-          // No body, that's fine
-        }
-        return {
-          success: true,
-          message: "Flock batch deleted successfully",
-        };
-      }
-
-      // Handle error responses
+  
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response, "Failed to delete flock batch");
         console.error("[v0] Flock batch delete error:", errorMessage);
@@ -202,7 +148,7 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
           message: errorMessage,
         };
       }
-
+  
       return {
         success: true,
         message: "Flock batch deleted successfully",
@@ -305,17 +251,14 @@ export async function createFlockBatch(flockBatch: FlockBatchInput): Promise<Api
           };
         }
     
-    const data = await response.json();
-    console.log("[v0] Flock batch data received:", data);
-
-    // Map response to handle both camelCase and PascalCase
-    const batch = mapFlockBatch(data);
-
-    return {
-      success: true,
-      message: "Flock batch fetched successfully",
-      data: batch,
-    };
+        const data = await response.json();
+        console.log("[v0] Flock batch data received:", data);
+    
+        return {
+          success: true,
+          message: "Flock batch fetched successfully",
+          data: data as FlockBatch,
+        };
       } catch (error) {
         console.error("[v0] Flock batch fetch error:", error);
         return {

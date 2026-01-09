@@ -93,6 +93,22 @@ async function handleRequest(
       const body = await request.text()
       if (body) {
         fetchOptions.body = body
+        // Log request body for debugging (limit to first 2000 chars to avoid huge logs)
+        try {
+          const bodyPreview = body.length > 2000 ? body.substring(0, 2000) + '...' : body
+          console.log('[Proxy API] Request body:', bodyPreview)
+          // Try to parse and log as JSON for better readability
+          try {
+            const bodyJson = JSON.parse(body)
+            console.log('[Proxy API] Request body (parsed):', JSON.stringify(bodyJson, null, 2))
+          } catch {
+            // Not JSON, log as-is
+          }
+        } catch (e) {
+          console.log('[Proxy API] Could not log request body:', e)
+        }
+      } else {
+        console.log('[Proxy API] No request body found')
       }
     }
 
