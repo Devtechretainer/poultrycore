@@ -97,10 +97,11 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
     }
   }, [isMobile, isMobileOpen, setMobileOpen])
 
+  // Dashboard as standalone menu item
+  const dashboardItem = { href: "/dashboard", label: "Dashboard", icon: Home, current: pathname === "/dashboard" }
+
   // Grouped navigation items
   const mainNavigationItems = [
-    { href: "/dashboard", label: "Overview", icon: Home, current: pathname === "/dashboard" },
-    { href: "/customers", label: "Customers", icon: Users },
     { href: "/flock-batch", label: "Flock Batch", icon: Bird },
     { href: "/flocks", label: "Flocks", icon: Bird },
     { href: "/houses", label: "Houses", icon: Building2 },
@@ -121,6 +122,7 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
   const financialNavigationItems = [
     { href: "/sales", label: "Sales", icon: ShoppingCart },
     { href: "/expenses", label: "Expenses", icon: DollarSign },
+    { href: "/customers", label: "Customers", icon: Users },
   ]
 
   const otherNavigationItems = [
@@ -310,6 +312,15 @@ export function DashboardSidebar({ onLogout }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex flex-1 flex-col px-3 pb-4 overflow-y-auto scrollbar-hide">
         <ul role="list" className="flex flex-1 flex-col gap-y-4">
+          {/* Dashboard - Standalone */}
+          <li>
+            <ul role="list" className="-mx-2 space-y-1">
+              <li>
+                {renderMenuItem(dashboardItem)}
+              </li>
+            </ul>
+          </li>
+
           {/* Main Navigation */}
           {renderGroup("Main", mainNavigationItems, "main")}
 
