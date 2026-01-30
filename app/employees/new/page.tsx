@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { UserCog, User, Mail, Phone, Lock } from "lucide-react"
+import { UserCog, User, Mail, Phone, Lock, Shield } from "lucide-react"
 import { createEmployee, type CreateEmployeeData } from "@/lib/api"
 import { getUserContext } from "@/lib/utils/user-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -40,7 +40,7 @@ export default function NewEmployeePage() {
     if (!permissions.isAdmin) {
       router.push("/dashboard")
     }
-  }, [permissions.isAdmin, permissions.isLoading])
+  }, [permissions.isAdmin, permissions.isLoading, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -92,6 +92,7 @@ export default function NewEmployeePage() {
     const result = await createEmployee(employeeData)
     
     if (result.success) {
+      setLoading(false)
       router.push("/employees")
     } else {
       const errorMessage = result.message || "Failed to create employee"
