@@ -4,17 +4,24 @@ import { NextRequest, NextResponse } from 'next/server'
 // to the backend API server-side
 
 function getApiBaseUrl(pathSegments: string[]): string {
-  // Check if this is an admin API request (path starts with "Admin")
-  const isAdminApi = pathSegments[0] === 'Admin'
+  // Check if this is an admin API request (path starts with "Admin" or "Authentication")
+  // Admin/Authentication endpoints go to LoginAPI (User Management API)
+  // All other endpoints go to PoultryFarmAPI (.NET backend)
+  const isAdminApi = pathSegments[0] === 'Admin' || pathSegments[0] === 'Authentication'
   
   // Get the appropriate API base URL from environment variable
+  // PoultryFarmAPI is the main .NET backend API (port 7190 for HTTPS, 5142 for HTTP)
   const apiBase = isAdminApi 
-    ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com')
-    : (process.env.NEXT_PUBLIC_API_BASE_URL || 'farmapi.techretainer.com')
+    ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com')  // LoginAPI for auth/employees
+    : (process.env.NEXT_PUBLIC_API_BASE_URL || 'localhost:7190')  // PoultryFarmAPI for main operations
   
   // Ensure it has https:// prefix if not already present
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
     return apiBase
+  }
+  // Default to https for production, http for localhost
+  if (apiBase.includes('localhost')) {
+    return `http://${apiBase}`
   }
   return `https://${apiBase}`
 }

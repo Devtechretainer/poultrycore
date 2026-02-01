@@ -1,17 +1,20 @@
 // Admin API (Employee Management) - Uses Backend API (LoginAPI)
-// All employee operations use the backend API at NEXT_PUBLIC_ADMIN_API_URL
-// This is the LoginAPI/User Management API that handles employee CRUD operations
+// All employee operations use the LoginAPI/User Management API at NEXT_PUBLIC_ADMIN_API_URL
+// Note: Employee management is handled by LoginAPI, not PoultryFarmAPI
+// PoultryFarmAPI handles farm operations (flocks, production, sales, etc.)
 import { getAuthHeaders } from './config'
 
 // Helper function to build admin API URLs
 // Uses proxy in browser to avoid CORS, direct URL on server
-// This ensures all employee API calls use the backend API (LoginAPI)
+// Employee operations go to LoginAPI (User Management API)
+// This is separate from PoultryFarmAPI which handles farm data operations
 function buildAdminApiUrl(endpoint: string): string {
   const IS_BROWSER = typeof window !== 'undefined'
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   
-  // Backend API URL for employees (LoginAPI - User Management API)
-  // This is the backend API that handles employee management
+  // LoginAPI URL for employees (User Management API)
+  // This handles authentication and employee CRUD operations
+  // PoultryFarmAPI handles farm operations (flocks, production, etc.)
   const backendAdminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
   
   if (IS_BROWSER) {
@@ -275,25 +278,28 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
     const url = buildAdminApiUrl('/Admin/employees')
     console.log("[Admin API] Creating employee via backend API:", url)
 
-    // Match the API request body structure exactly
+    // Match the API request body structure exactly - backend expects PascalCase
     const requestBody = {
-      email: employee.email,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      phoneNumber: employee.phoneNumber,
-      userName: employee.userName,
-      password: employee.password,
-      farmId: employee.farmId,
-      farmName: employee.farmName,
+      Email: employee.email,
+      FirstName: employee.firstName,
+      LastName: employee.lastName,
+      PhoneNumber: employee.phoneNumber,
+      UserName: employee.userName,
+      Password: employee.password,
+      FarmId: employee.farmId,
+      FarmName: employee.farmName,
     }
 
     console.log("[Admin API] Request body:", JSON.stringify(requestBody, null, 2))
+    console.log("[Admin API] Request URL:", url)
 
     // Use custom headers for Admin API
     const headers = {
       ...getAuthHeaders(),
-      Accept: "text/plain", // Admin API expects text/plain
+      Accept: "application/json", // Backend returns JSON (EmployeeModel)
     }
+
+    console.log("[Admin API] Request headers:", headers)
 
     const response = await fetch(url, {
       method: "POST",
@@ -303,11 +309,15 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
 
     console.log("[Admin API] Create response status:", response.status, response.statusText)
     console.log("[Admin API] Response headers:", [...response.headers.entries()])
+    console.log("[Admin API] Response OK:", response.ok)
+
+    // Read response body once (can only be read once)
+    const responseText = await response.text()
+    console.log("[Admin API] Raw response text:", responseText)
 
     if (!response.ok) {
-      const errorText = await response.text()
       console.error("[Admin API] Create error (status):", response.status, response.statusText)
-      console.error("[Admin API] Create error (body):", errorText)
+      console.error("[Admin API] Create error (body):", responseText)
       
       // Handle authentication errors
       if (response.status === 401) {
@@ -319,7 +329,7 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
       }
       
       // Handle empty error response
-      if (!errorText || errorText.trim() === '') {
+      if (!responseText || responseText.trim() === '') {
         return {
           success: false,
           message: `API returned ${response.status} ${response.statusText}. Please check the API connection.`,
@@ -328,7 +338,7 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
       
       // Parse error for better message
       try {
-        const errorData = JSON.parse(errorText)
+        const errorData = JSON.parse(responseText)
         let errorMessage = 'Failed to create employee'
         
         // Try to extract the actual error message
@@ -348,18 +358,27 @@ export async function createEmployee(employee: CreateEmployeeData): Promise<ApiR
         // If not JSON, use the text as-is
         return {
           success: false,
-          message: errorText || `Failed to create employee: ${response.status} ${response.statusText}`,
+          message: responseText || `Failed to create employee: ${response.status} ${response.statusText}`,
         }
       }
     }
 
-    // Try to read the response body as text (since API returns text/plain)
-    const responseText = await response.text()
-    console.log("[Admin API] Success response:", responseText)
+    // Backend returns JSON (EmployeeModel) with 201 Created status
+    let responseData: any = {}
+    if (responseText && responseText.trim()) {
+      try {
+        responseData = JSON.parse(responseText)
+        console.log("[Admin API] Success response (parsed):", responseData)
+      } catch (e) {
+        console.warn("[Admin API] Could not parse response as JSON:", e)
+        console.warn("[Admin API] Response text was:", responseText)
+      }
+    }
 
     return {
       success: true,
-      message: responseText || "Employee created successfully",
+      data: responseData as Employee,
+      message: "Employee created successfully",
     }
   } catch (error) {
     console.error("[Admin API] Create exception:", error)

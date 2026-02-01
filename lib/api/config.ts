@@ -1,7 +1,17 @@
 // API Configuration
-function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
+// PoultryFarmAPI is the main .NET backend API
+// Default: localhost:7190 (HTTPS) or localhost:5142 (HTTP) for local development
+// Production: farmapi.techretainer.com or your production URL
+function normalizeApiBase(raw?: string, fallback = 'localhost:7190') {
   const val = raw || fallback
-  return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
+  if (val.startsWith('http://') || val.startsWith('https://')) {
+    return val
+  }
+  // Default to https for production URLs, http for localhost
+  if (val.includes('localhost')) {
+    return `http://${val}`
+  }
+  return `https://${val}`
 }
 
 // Direct API base URL (for server-side use)

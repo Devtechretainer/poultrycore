@@ -73,7 +73,18 @@ export default function LoginPage() {
       
       setShowSuccess(true)
     } else {
-      setError(result.message || "Login failed. Please try again.")
+      // Show user-friendly error message
+      let errorMessage = result.message || "Login failed. Please try again."
+      
+      // Provide specific guidance for common errors
+      if (errorMessage.includes("not found") || errorMessage.includes("doesnot exist")) {
+        errorMessage = "Username or email not found. Please verify your credentials or contact your administrator."
+      } else if (errorMessage.includes("Invalid password")) {
+        errorMessage = "Invalid password. Please check your password and try again."
+      }
+      
+      setError(errorMessage)
+      console.error("[Login] Login failed:", result)
     }
 
     setIsLoading(false)

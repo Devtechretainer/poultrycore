@@ -192,10 +192,24 @@ export async function login(data: LoginData): Promise<ApiResponse> {
     console.log("[Poultry Core] Is Success:", result.isSuccess)
     console.log("[Poultry Core] Response keys:", Object.keys(result))
 
-    if (!response.ok) {
+    // Check for specific error messages
+    if (!response.ok || !result.isSuccess) {
+      let errorMessage = result.message || result.Message || "Login failed"
+      
+      // Provide helpful error messages for common issues
+      if (errorMessage.includes("doesnot exist") || errorMessage.includes("does not exist") || errorMessage.includes("User doesnot exist")) {
+        errorMessage = "Username or email not found. Please check your credentials or contact your administrator to verify your account exists."
+      } else if (errorMessage.includes("Invalid password") || errorMessage.includes("invalid password")) {
+        errorMessage = "Invalid password. Please check your password and try again."
+      } else if (errorMessage.includes("locked out")) {
+        errorMessage = "Account is locked. Please try again later or contact your administrator."
+      } else if (errorMessage.includes("verify your email") || errorMessage.includes("email confirmation")) {
+        errorMessage = "Please verify your email address before logging in. Check your email for a verification link."
+      }
+      
       return {
         success: false,
-        message: result.message || "Login failed",
+        message: errorMessage,
         errors: result.errors,
       }
     }
