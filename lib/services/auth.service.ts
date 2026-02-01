@@ -93,6 +93,50 @@ export class AuthService {
     if (typeof window !== 'undefined' && token) {
       localStorage.setItem('auth_token', token)
       try { (await import('@/lib/api/client')).apiClient.setToken(token) } catch {}
+      
+      // Store employee information in localStorage (same as regular login)
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken)
+      }
+      
+      // Handle case sensitivity for IsStaff/isStaff
+      const isStaff = user.isStaff || data?.isStaff || data?.IsStaff || false
+      const isSubscriber = user.isSubscriber || data?.isSubscriber || data?.IsSubscriber || false
+      
+      // Store user ID
+      if (user.id) {
+        localStorage.setItem('userId', user.id)
+      }
+      
+      // Store username
+      if (user.username) {
+        localStorage.setItem('username', user.username)
+      }
+      
+      // Store farm ID
+      if (user.farmId) {
+        localStorage.setItem('farmId', user.farmId)
+      }
+      
+      // Store farm name
+      if (user.farmName) {
+        localStorage.setItem('farmName', user.farmName)
+      } else {
+        localStorage.setItem('farmName', 'My Farm')
+      }
+      
+      // Store roles - default based on staff status
+      if (isStaff) {
+        localStorage.setItem('roles', JSON.stringify(['Staff', 'User']))
+      } else {
+        localStorage.setItem('roles', JSON.stringify(['Admin', 'FarmAdmin']))
+      }
+      
+      // Store user flags
+      localStorage.setItem('isStaff', String(isStaff))
+      localStorage.setItem('isSubscriber', String(isSubscriber))
+      
+      console.log('[2FA Login] Stored employee information - isStaff:', isStaff)
     }
 
     return { token, refreshToken, user } as AuthResponse

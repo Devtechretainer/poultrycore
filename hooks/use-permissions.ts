@@ -29,8 +29,11 @@ export function usePermissions(): UserPermissions {
     if (typeof window === "undefined") return
 
     // Get user roles and flags from localStorage
-    const isStaff = localStorage.getItem("isStaff") === "true"
-    const isSubscriber = localStorage.getItem("isSubscriber") === "true"
+    // Handle both string "true"/"false" and boolean values
+    const isStaffStr = localStorage.getItem("isStaff")
+    const isStaff = isStaffStr === "true" || isStaffStr === true
+    const isSubscriberStr = localStorage.getItem("isSubscriber")
+    const isSubscriber = isSubscriberStr === "true" || isSubscriberStr === true
     const rolesString = localStorage.getItem("roles") || "[]"
     
     let roles: string[] = []
@@ -41,24 +44,31 @@ export function usePermissions(): UserPermissions {
       roles = []
     }
 
-    // If no roles and not staff, default to Admin (for existing users who registered before roles were saved)
-    if (roles.length === 0 && !isStaff) {
-      roles = ["Admin"]
-      localStorage.setItem("roles", JSON.stringify(["Admin"]))
-      console.log("[v0] No roles found, defaulting to Admin for non-staff user")
+    // If no roles found, set default based on staff status
+    if (roles.length === 0) {
+      if (isStaff) {
+        roles = ["Staff", "User"]
+        localStorage.setItem("roles", JSON.stringify(roles))
+        console.log("[v0] No roles found, defaulting to Staff for employee")
+      } else {
+        roles = ["Admin", "FarmAdmin"]
+        localStorage.setItem("roles", JSON.stringify(roles))
+        console.log("[v0] No roles found, defaulting to Admin for non-staff user")
+      }
     }
 
     // Determine if user is admin
     // Admin can be identified by:
-    // 1. Having "Admin" role
-    // 2. Being a subscriber (owner)
-    // 3. NOT being staff (staff = employee with limited access)
-    // For now, default to admin if no specific staff flag is set
-    const isAdmin = 
+    // 1. NOT being staff (staff = employee with limited access)
+    // 2. Having "Admin" or "FarmAdmin" role (and not staff)
+    // 3. Being a subscriber (owner) AND not being staff
+    const isAdmin = !isStaff && (
       roles.includes("Admin") || 
-      roles.includes("Owner") || 
-      (isSubscriber && !isStaff) ||
-      (!isStaff)  // Default: if not explicitly staff, assume admin
+      roles.includes("FarmAdmin") || 
+      roles.includes("Owner") ||
+      isSubscriber ||
+      true  // Default: if not staff, assume admin
+    )
 
     // Set permissions based on role
     const userPermissions: UserPermissions = {

@@ -221,8 +221,10 @@ export async function login(data: LoginData): Promise<ApiResponse> {
     console.log("[Poultry Core] No 2FA required, processing normal login")
 
     // Handle the response structure from your API
-    if (result.isSuccess && result.response) {
-      const userData = result.response
+    // The response can be in result.response (nested) or directly in result (flat)
+    const userData = result.response || result
+    
+    if (result.isSuccess && userData) {
 
       // Store access token
       if (userData.accessToken?.token) {
@@ -247,53 +249,67 @@ export async function login(data: LoginData): Promise<ApiResponse> {
         console.log("[Poultry Core] Stored refresh token")
       }
 
-      // Store user ID
-      if (userData.userId) {
-        localStorage.setItem("userId", userData.userId)
-        console.log("[Poultry Core] Stored userId:", userData.userId)
+      // Store user ID - handle both case variations
+      const userId = userData.userId || userData.UserId
+      if (userId) {
+        localStorage.setItem("userId", userId)
+        console.log("[Poultry Core] Stored userId:", userId)
       }
 
-      // Store username
-      if (userData.username) {
-        localStorage.setItem("username", userData.username)
-        console.log("[Poultry Core] Stored username:", userData.username)
+      // Store username - handle both case variations
+      const username = userData.username || userData.Username || userData.userName || userData.UserName
+      if (username) {
+        localStorage.setItem("username", username)
+        console.log("[Poultry Core] Stored username:", username)
       }
 
-      // Store farm ID
-      if (userData.farmId) {
-        localStorage.setItem("farmId", userData.farmId)
-        console.log("[v0] Stored farmId:", userData.farmId)
-      } else if (userData.userId) {
+      // Store farm ID - handle both case variations
+      const farmId = userData.farmId || userData.FarmId
+      if (farmId) {
+        localStorage.setItem("farmId", farmId)
+        console.log("[v0] Stored farmId:", farmId)
+      } else if (userId) {
         // Fallback: If farmId is not returned, use userId as farmId
-        localStorage.setItem("farmId", userData.userId)
-        console.log("[v0] FarmId not in response, using userId as farmId:", userData.userId)
+        localStorage.setItem("farmId", userId)
+        console.log("[v0] FarmId not in response, using userId as farmId:", userId)
       }
 
-      // Store farm name
-      if (userData.farmName) {
-        localStorage.setItem("farmName", userData.farmName)
-        console.log("[v0] Stored farmName:", userData.farmName)
+      // Store farm name - handle both case variations
+      const farmName = userData.farmName || userData.FarmName
+      if (farmName) {
+        localStorage.setItem("farmName", farmName)
+        console.log("[v0] Stored farmName:", farmName)
       } else {
         // Fallback farm name
         localStorage.setItem("farmName", "My Farm")
         console.log("[v0] FarmName not in response, using default: My Farm")
       }
 
-      // Store user roles
+      // Handle case sensitivity for IsStaff/isStaff
+      const isStaff = userData.isStaff || userData.IsStaff || false
+      const isSubscriber = userData.isSubscriber || userData.IsSubscriber || false
+      
+      // Store user roles - check if user is staff first
       if (userData.roles && Array.isArray(userData.roles)) {
         localStorage.setItem("roles", JSON.stringify(userData.roles))
         console.log("[v0] Stored roles:", userData.roles)
       } else {
-        // Default to Admin role if not specified
-        localStorage.setItem("roles", JSON.stringify(["Admin"]))
-        console.log("[v0] No roles in response, defaulting to Admin")
+        // Default role based on staff status
+        if (isStaff) {
+          localStorage.setItem("roles", JSON.stringify(["Staff", "User"]))
+          console.log("[v0] No roles in response, defaulting to Staff for employee")
+        } else {
+          localStorage.setItem("roles", JSON.stringify(["Admin", "FarmAdmin"]))
+          console.log("[v0] No roles in response, defaulting to Admin for non-staff user")
+        }
       }
 
-      // Store user flags
-      localStorage.setItem("isStaff", String(userData.isStaff || false))
-      localStorage.setItem("isSubscriber", String(userData.isSubscriber || false))
+      // Store user flags - handle both case variations
+      localStorage.setItem("isStaff", String(isStaff))
+      localStorage.setItem("isSubscriber", String(isSubscriber))
       
       console.log("[v0] Login complete - stored all user data")
+      console.log("[v0] Employee status - isStaff:", isStaff, "isSubscriber:", isSubscriber)
     }
 
     return {

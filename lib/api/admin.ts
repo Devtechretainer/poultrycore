@@ -1,21 +1,31 @@
-// Admin API uses different port than other APIs
+// Admin API (Employee Management) - Uses Backend API (LoginAPI)
+// All employee operations use the backend API at NEXT_PUBLIC_ADMIN_API_URL
+// This is the LoginAPI/User Management API that handles employee CRUD operations
 import { getAuthHeaders } from './config'
 
 // Helper function to build admin API URLs
 // Uses proxy in browser to avoid CORS, direct URL on server
+// This ensures all employee API calls use the backend API (LoginAPI)
 function buildAdminApiUrl(endpoint: string): string {
   const IS_BROWSER = typeof window !== 'undefined'
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   
+  // Backend API URL for employees (LoginAPI - User Management API)
+  // This is the backend API that handles employee management
+  const backendAdminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+  
   if (IS_BROWSER) {
     // Using proxy - endpoint should be Admin/... (no /api/ prefix)
+    // The proxy will route to the backend API (LoginAPI)
     const proxyPath = cleanEndpoint.replace(/^\/api\//, '/')
+    console.log("[Admin API] Using proxy for backend API:", `/api/proxy${proxyPath}`)
     return `/api/proxy${proxyPath}`
   } else {
-    // Server-side: use direct URL
-    const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+    // Server-side: use direct backend API URL
     const apiPath = cleanEndpoint.startsWith('/api/') ? cleanEndpoint : `/api${cleanEndpoint}`
-    return `${adminApiUrl}${apiPath}`
+    const fullUrl = `${backendAdminApiUrl}${apiPath}`
+    console.log("[Admin API] Using direct backend API URL:", fullUrl)
+    return fullUrl
   }
 }
 
@@ -90,11 +100,12 @@ const mockEmployees: Employee[] = [
   },
 ]
 
-// Get all employees
+// Get all employees from backend API
+// This calls the backend API (LoginAPI) endpoint: /api/Admin/employees
 export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
   try {
     const url = buildAdminApiUrl('/Admin/employees')
-    console.log("[Admin API] Fetching employees:", url)
+    console.log("[Admin API] Fetching employees from backend API:", url)
     
     // Log token presence for debugging
     if (typeof window !== "undefined") {
@@ -256,11 +267,13 @@ export async function getEmployee(id: string): Promise<ApiResponse<Employee>> {
   }
 }
 
-// Create new employee (staff member)
+// Create new employee (staff member) using backend API
+// This calls the backend API (LoginAPI) endpoint: /api/Admin/employees
+// The backend API handles employee creation with proper FarmId assignment
 export async function createEmployee(employee: CreateEmployeeData): Promise<ApiResponse<Employee>> {
   try {
     const url = buildAdminApiUrl('/Admin/employees')
-    console.log("[Admin API] Creating employee:", url)
+    console.log("[Admin API] Creating employee via backend API:", url)
 
     // Match the API request body structure exactly
     const requestBody = {

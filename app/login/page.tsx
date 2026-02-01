@@ -37,17 +37,40 @@ export default function LoginPage() {
 
     if (result.success) {
       // Check if 2FA is required
-      console.log("[Login] Checking 2FA requirement:", result.data?.requiresTwoFactor)
-      if (result.data?.requiresTwoFactor) {
+      const requires2FA = result.data?.requiresTwoFactor || result.data?.RequiresTwoFactor
+      console.log("[Login] Checking 2FA requirement:", requires2FA)
+      
+      if (requires2FA) {
+        // Handle both case variations for userId and userName
+        const userId = result.data?.userId || result.data?.UserId
+        const userName = result.data?.userName || result.data?.UserName || result.data?.username || result.data?.Username
+        
         console.log("[Login] Redirecting to 2FA page with:", {
-          userId: result.data.userId,
-          userName: result.data.userName
+          userId,
+          userName
         })
+        
+        // Store employee info temporarily for 2FA flow
+        if (result.data?.isStaff !== undefined || result.data?.IsStaff !== undefined) {
+          const isStaff = result.data?.isStaff || result.data?.IsStaff || false
+          localStorage.setItem("isStaff", String(isStaff))
+        }
+        
         // Redirect to 2FA page
-        router.push(`/login-2fa?userId=${result.data.userId}&userName=${result.data.userName}`)
+        router.push(`/login-2fa?userId=${userId}&userName=${encodeURIComponent(userName || '')}`)
         return
       }
+      
       console.log("[Login] No 2FA required, showing success modal")
+      
+      // Check if user is an employee and log it
+      const isStaff = localStorage.getItem("isStaff") === "true"
+      if (isStaff) {
+        console.log("[Login] Employee login successful")
+      } else {
+        console.log("[Login] Admin login successful")
+      }
+      
       setShowSuccess(true)
     } else {
       setError(result.message || "Login failed. Please try again.")

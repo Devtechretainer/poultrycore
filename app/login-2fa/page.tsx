@@ -53,6 +53,13 @@ function Login2FAForm() {
         response.user
       )
 
+      // Ensure employee information is stored (should already be done in AuthService, but double-check)
+      if (typeof window !== 'undefined') {
+        const isStaff = response.user?.isStaff || false
+        localStorage.setItem("isStaff", String(isStaff))
+        console.log("[2FA Login] Employee status stored - isStaff:", isStaff)
+      }
+
       // Redirect to dashboard
       router.push("/dashboard")
     } catch (err: any) {
