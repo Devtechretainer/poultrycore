@@ -495,6 +495,16 @@ export async function getTodayLogins(): Promise<ApiResponse<Employee[]>> {
     console.log("[Admin API] Today logins response status:", response.status)
 
     if (!response.ok) {
+      // Handle 404 gracefully - endpoint may not be deployed yet
+      if (response.status === 404) {
+        console.warn("[Admin API] Today logins endpoint not found (404) - returning empty array")
+        return {
+          success: true,
+          data: [],
+          message: "Today logins endpoint not available",
+        }
+      }
+      
       const errorText = await response.text()
       console.error("[Admin API] Today logins error:", errorText)
       
