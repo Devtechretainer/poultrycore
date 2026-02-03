@@ -128,9 +128,19 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
 
     if (!response.ok) {
       const errorText = await response.text()
+      
       // Only log error details if not 401 (auth issue) and if error text exists
       if (response.status !== 401 && errorText && errorText.trim() !== '') {
-        console.warn("[Admin API] Fetch error:", errorText)
+        // Check if it's an HTML error page (like 404 pages from IIS)
+        const isHtmlError = errorText.trim().toLowerCase().startsWith('<!doctype html') || 
+                           errorText.includes('<html') || 
+                           errorText.includes('404 - File or directory not found')
+        
+        if (isHtmlError) {
+          console.warn("[Admin API] Received HTML error page (likely 404):", response.status)
+        } else {
+          console.warn("[Admin API] Fetch error:", errorText.substring(0, 500))
+        }
         console.warn("[Admin API] Response status:", response.status)
       }
       
@@ -142,6 +152,22 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
         }
       }
       
+      // Handle 404 errors gracefully (endpoint may not be deployed)
+      if (response.status === 404) {
+        const isHtmlError = errorText && (
+          errorText.trim().toLowerCase().startsWith('<!doctype html') || 
+          errorText.includes('<html') || 
+          errorText.includes('404 - File or directory not found')
+        )
+        
+        if (isHtmlError) {
+          return {
+            success: false,
+            message: "Employees API endpoint not found. The backend API may not be deployed or the endpoint is unavailable.",
+          }
+        }
+      }
+      
       // Handle empty error response
       if (!errorText || errorText.trim() === '') {
         return {
@@ -150,21 +176,35 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
         }
       }
       
+      // Check if error is HTML (like IIS 404 page)
+      const isHtmlError = errorText.trim().toLowerCase().startsWith('<!doctype html') || 
+                         errorText.includes('<html') || 
+                         errorText.includes('404 - File or directory not found')
+      
+      if (isHtmlError) {
+        return {
+          success: false,
+          message: `API endpoint not found (${response.status}). The backend API may not be deployed or the URL is incorrect.`,
+        }
+      }
+      
       // Parse error message
       try {
         const errorData = JSON.parse(errorText)
         const errorMessages = errorData.errors 
           ? Object.values(errorData.errors).flat().join(', ')
-          : errorData.title || 'Failed to fetch employees'
+          : errorData.title || errorData.message || 'Failed to fetch employees'
         
         return {
           success: false,
           message: `API Error: ${errorMessages}`,
         }
       } catch (e) {
+        // If not JSON, return a more helpful message
+        const errorPreview = errorText.length > 200 ? errorText.substring(0, 200) + '...' : errorText
         return {
           success: false,
-          message: `Failed to fetch employees: ${errorText || response.statusText}`,
+          message: `Failed to fetch employees (${response.status}): ${errorPreview}`,
         }
       }
     }
@@ -178,24 +218,39 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
       data: data as Employee[],
     }
   } catch (error) {
-    // Silently handle Admin API errors - it's optional for chat functionality
+    // Handle network errors and other exceptions
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorName = error instanceof Error ? error.name : 'Unknown'
     
-    // Only log if it's not a network error (which is expected if Admin API is unavailable)
-    if (!errorMessage.includes('Failed to fetch') && !errorMessage.includes('NetworkError')) {
-      console.warn("[Admin API] Fetch error (non-network):", errorMessage)
-    }
+    // Log all errors for debugging
+    console.error("[Admin API] Exception fetching employees:", {
+      name: errorName,
+      message: errorMessage,
+      error: error
+    })
     
-    if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+    // Handle network errors (connection refused, CORS, timeout, etc.)
+    if (errorMessage.includes('Failed to fetch') || 
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Network request failed') ||
+        errorName === 'TypeError' && errorMessage.includes('fetch')) {
       return {
         success: false,
-        message: `Unable to connect to the Admin API. Please ensure the server is running and accessible.`,
+        message: `Unable to connect to the Admin API. Please ensure the server is running and accessible at ${process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com'}.`,
+      }
+    }
+    
+    // Handle timeout errors
+    if (errorMessage.includes('timeout') || errorMessage.includes('aborted')) {
+      return {
+        success: false,
+        message: `Request timed out. The Admin API may be slow or unavailable.`,
       }
     }
     
     return {
       success: false,
-      message: `Network error: ${errorMessage}`,
+      message: `Error fetching employees: ${errorMessage}`,
     }
   }
 }
