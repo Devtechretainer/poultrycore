@@ -1,25 +1,17 @@
-// Admin API (Employee Management) - Uses Backend API (LoginAPI)
-// All employee operations use the LoginAPI/User Management API at NEXT_PUBLIC_ADMIN_API_URL
-// Note: Employee management is handled by LoginAPI, not PoultryFarmAPI
-// PoultryFarmAPI handles farm operations (flocks, production, sales, etc.)
+
 import { getAuthHeaders } from './config'
 
-// Helper function to build admin API URLs
-// Uses proxy in browser to avoid CORS, direct URL on server
-// Employee operations go to LoginAPI (User Management API)
-// This is separate from PoultryFarmAPI which handles farm data operations
+
 function buildAdminApiUrl(endpoint: string): string {
   const IS_BROWSER = typeof window !== 'undefined'
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   
-  // LoginAPI URL for employees (User Management API)
-  // This handles authentication and employee CRUD operations
-  // PoultryFarmAPI handles farm operations (flocks, production, etc.)
-  const backendAdminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.poultrycore.com"
+  // LoginAPI base URL (User Management API)
+  // Prefer environment variable, fall back to production host
+  const backendAdminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://usermanagementapi.techretainer.com"
   
   if (IS_BROWSER) {
-    // Using proxy - endpoint should be Admin/... (no /api/ prefix)
-    // The proxy will route to the backend API (LoginAPI)
+    // In the browser we always go through the Next.js proxy to avoid CORS
     const proxyPath = cleanEndpoint.replace(/^\/api\//, '/')
     console.log("[Admin API] Using proxy for backend API:", `/api/proxy${proxyPath}`)
     return `/api/proxy${proxyPath}`
@@ -234,9 +226,10 @@ export async function getEmployees(): Promise<ApiResponse<Employee[]>> {
         errorMessage.includes('NetworkError') ||
         errorMessage.includes('Network request failed') ||
         errorName === 'TypeError' && errorMessage.includes('fetch')) {
+      const fallbackUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'https://usermanagementapi.techretainer.com'
       return {
         success: false,
-        message: `Unable to connect to the Admin API. Please ensure the server is running and accessible at ${process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com'}.`,
+        message: `Unable to connect to the Admin API. Please ensure the server is running and accessible at ${fallbackUrl}.`,
       }
     }
     

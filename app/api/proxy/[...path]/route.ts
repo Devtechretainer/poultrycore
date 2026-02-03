@@ -12,7 +12,7 @@ function getApiBaseUrl(pathSegments: string[]): string {
   // Get the appropriate API base URL from environment variable
   // PoultryFarmAPI is the main .NET backend API (port 7190 for HTTPS, 5142 for HTTP)
   const apiBase = isAdminApi 
-    ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.poultrycore.com')  // LoginAPI for auth/employees
+    ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.techretainer.com')  // LoginAPI for auth/employees
     : (process.env.NEXT_PUBLIC_API_BASE_URL || 'localhost:7190')  // PoultryFarmAPI for main operations
   
   // Ensure it has https:// prefix if not already present
