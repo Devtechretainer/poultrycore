@@ -97,6 +97,18 @@ export async function getFlockBatches(userId?: string, farmId?: string): Promise
         };
       }
       
+      // Handle 500 errors with more detail
+      if (response.status === 500) {
+        const errorMessage = await getErrorMessage(response, "Backend server error (500). The API may be experiencing issues.");
+        console.error("[v0] Flock batches server error (500):", errorMessage);
+        console.error("[v0] Request URL:", url);
+        return {
+          success: false,
+          message: errorMessage || "Backend server error. Please check if the API is running and accessible.",
+          data: [],
+        };
+      }
+      
       const errorMessage = await getErrorMessage(response, "Failed to fetch flock batches");
       console.error("[v0] Flock batches fetch error:", errorMessage);
       return {

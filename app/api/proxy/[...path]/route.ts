@@ -13,7 +13,7 @@ function getApiBaseUrl(pathSegments: string[]): string {
   // PoultryFarmAPI is the main .NET backend API (port 7190 for HTTPS, 5142 for HTTP)
   const apiBase = isAdminApi 
     ? (process.env.NEXT_PUBLIC_ADMIN_API_URL || 'usermanagementapi.techretainer.com')  // LoginAPI for auth/employees
-    : (process.env.NEXT_PUBLIC_API_BASE_URL || 'localhost:7190')  // PoultryFarmAPI for main operations
+    : (process.env.NEXT_PUBLIC_API_BASE_URL || 'farmapi.techretainer.com')  // PoultryFarmAPI for main operations
   
   // Ensure it has https:// prefix if not already present
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
@@ -174,7 +174,9 @@ async function handleRequest(
       
       // Log error responses for debugging
       if (response.status >= 400) {
-        console.error('[Proxy API] Error response body:', body)
+        console.error('[Proxy API] Error response body:', JSON.stringify(body, null, 2))
+        console.error('[Proxy API] Error response status:', response.status, response.statusText)
+        console.error('[Proxy API] Target URL that failed:', targetUrl)
       }
     } catch (error) {
       console.error('[Proxy API] Error reading response body:', error)
