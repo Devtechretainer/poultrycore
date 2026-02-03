@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Plus, Pencil, Trash2, Calendar, Bird, Users, MapPin, AlertCircle, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react"
+import { Plus, Pencil, Trash2, Calendar, Bird, Users, MapPin, AlertCircle, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Filter, Home } from "lucide-react"
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { format } from "date-fns"
