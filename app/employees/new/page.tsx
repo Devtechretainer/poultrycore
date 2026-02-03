@@ -66,27 +66,14 @@ export default function NewEmployeePage() {
       return
     }
 
-    // Validate password requirements to match backend
+    // Simple password requirements to match backend Identity (min 4 chars)
     const passwordErrors: string[] = []
     
-    if (formData.password.length < 12) {
-      passwordErrors.push("Password must be at least 12 characters long")
-    }
-    
-    if (!/[a-z]/.test(formData.password)) {
-      passwordErrors.push("Password must have at least one lowercase letter ('a'-'z')")
-    }
-    
-    if (!/[A-Z]/.test(formData.password)) {
-      passwordErrors.push("Password must have at least one uppercase letter ('A'-'Z')")
-    }
-    
-    if (!/[^a-zA-Z0-9]/.test(formData.password)) {
-      passwordErrors.push("Password must have at least one non-alphanumeric character")
+    if (formData.password.length < 4) {
+      passwordErrors.push("Password must be at least 4 characters long")
     }
     
     if (passwordErrors.length > 0) {
-
       setError(passwordErrors.join(", "))
       setLoading(false)
       return
@@ -300,10 +287,10 @@ export default function NewEmployeePage() {
                           className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                           required
                           disabled={loading}
-                          placeholder="At least 12 characters with uppercase, lowercase, and special character"
+                          placeholder="At least 4 characters"
                         />
                         <p className="text-xs text-slate-500 mt-1">
-                          Password must be at least 12 characters and include: uppercase letter, lowercase letter, and special character
+                          Password must be at least 4 characters long.
                         </p>
                       </div>
 
