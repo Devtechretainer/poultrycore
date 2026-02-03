@@ -37,6 +37,18 @@ export interface ApiResponse<T = any> {
   errors?: string[]
 }
 
+// Map backend HouseModel (PascalCase) to frontend House (camelCase)
+function mapHouse(raw: any): House {
+  return {
+    houseId: Number(raw.houseId ?? raw.HouseId ?? 0),
+    farmId: raw.farmId ?? raw.FarmId ?? "",
+    name: raw.name ?? raw.HouseName ?? "",
+    capacity: raw.capacity ?? raw.Capacity ?? null,
+    createdDate: raw.createdDate ?? raw.CreatedDate ?? undefined,
+    location: raw.location ?? raw.Location ?? null,
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
   try {
     // Remove /api/ prefix if present (buildApiUrl handles it)
@@ -80,12 +92,31 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
 // GET /api/House?userId=&farmId=
 export async function getHouses(userId: string, farmId: string): Promise<ApiResponse<House[]>> {
   const qs = new URLSearchParams({ userId, farmId }).toString()
-  return request<House[]>(`/api/House?${qs}`)
+  const res = await request<any[]>(`/api/House?${qs}`)
+  if (!res.success || !Array.isArray(res.data)) {
+    return { success: false, message: res.message || "Failed to fetch houses", data: [] }
+  }
+
+  const mapped = res.data.map(mapHouse)
+  return {
+    success: true,
+    data: mapped,
+    message: res.message,
+  }
 }
 
 // GET /api/House/{id}?userId=&farmId=
 export async function getHouse(id: number, userId: string, farmId: string): Promise<ApiResponse<House>> {
-  return request<House>(`/api/House/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`)
+  const res = await request<any>(`/api/House/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`)
+  if (!res.success || !res.data) {
+    return { success: false, message: res.message || "Failed to fetch house" } as ApiResponse<House>
+  }
+
+  return {
+    success: true,
+    data: mapHouse(res.data),
+    message: res.message,
+  }
 }
 
 // POST /api/House { UserId, FarmId, HouseName, Capacity, Location }
@@ -97,10 +128,20 @@ export async function createHouse(input: HouseInput): Promise<ApiResponse<House>
     Capacity: input.capacity ?? null,
     Location: input.location ?? null,
   }
-  return request<House>(`/api/House`, {
+  const res = await request<any>(`/api/House`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+
+  if (!res.success || !res.data) {
+    return { success: false, message: res.message || "Failed to create house" } as ApiResponse<House>
+  }
+
+  return {
+    success: true,
+    data: mapHouse(res.data),
+    message: res.message,
+  }
 }
 
 // PUT /api/House/{id}
@@ -113,10 +154,20 @@ export async function updateHouse(id: number, input: HouseInput): Promise<ApiRes
     Capacity: input.capacity ?? null,
     Location: input.location ?? null,
   }
-  return request<House>(`/api/House/${id}`, {
+  const res = await request<any>(`/api/House/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   })
+
+  if (!res.success || !res.data) {
+    return { success: false, message: res.message || "Failed to update house" } as ApiResponse<House>
+  }
+
+  return {
+    success: true,
+    data: mapHouse(res.data),
+    message: res.message,
+  }
 }
 
 // DELETE /api/House/{id}?userId=&farmId={}

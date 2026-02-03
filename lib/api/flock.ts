@@ -295,18 +295,10 @@ export async function getFlocks(userId?: string, farmId?: string): Promise<ApiRe
       console.error("[v0]   3. Backend is returning flocks with null/empty farmId")
     }
     
-    if (userId && filteredData.length > 0) {
-      // Normalize userId - trim whitespace and convert to string for comparison
-      const requestedUserId = String(userId || '').trim().toLowerCase()
-      const beforeUserIdFilter = filteredData.length
-      
-      filteredData = filteredData.filter((flock: any) => {
-        const flockUserId = String(flock.userId || '').trim().toLowerCase()
-        return flockUserId === requestedUserId
-      })
-      
-      console.log("[v0] After userId filter count:", filteredData.length, "(filtered out:", beforeUserIdFilter - filteredData.length, ")")
-    }
+    // REMOVED: Client-side userId filtering
+    // All users (admin and staff) in the same farm should see all flocks
+    // The backend stored procedure (spFlock_GetAll) already filters by FarmId only
+    // No need to filter by userId on the frontend
 
     return {
       success: true,

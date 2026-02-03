@@ -47,13 +47,15 @@ export interface ApiResponse<T = any> {
 
 function mapSupply(raw: any): Supply {
   return {
-    id: Number(raw.id ?? raw.Id ?? raw.supplyId ?? raw.SupplyId ?? 0),
-    userId: raw.userId ?? raw.UserId ?? '',
-    farmId: raw.farmId ?? raw.FarmId ?? '',
-    name: raw.name ?? raw.Name ?? '',
-    type: raw.type ?? raw.Type ?? '',
-    quantity: Number(raw.quantity ?? raw.Quantity ?? 0),
-    unit: raw.unit ?? raw.Unit ?? '',
+    id: Number(raw.itemId ?? raw.ItemId ?? raw.id ?? raw.Id ?? 0),
+    userId: raw.userId ?? raw.UserId ?? "",
+    farmId: raw.farmId ?? raw.FarmId ?? "",
+    name: raw.name ?? raw.Name ?? raw.itemName ?? raw.ItemName ?? "",
+    type: raw.type ?? raw.Type ?? raw.category ?? raw.Category ?? "",
+    quantity: Number(
+      raw.quantity ?? raw.Quantity ?? raw.quantityInStock ?? raw.QuantityInStock ?? 0
+    ),
+    unit: raw.unit ?? raw.Unit ?? raw.unitOfMeasure ?? raw.UnitOfMeasure ?? "",
     cost: Number(raw.cost ?? raw.Cost ?? 0),
     supplier: raw.supplier ?? raw.Supplier ?? null,
     purchaseDate: raw.purchaseDate ?? raw.PurchaseDate ?? null,
@@ -63,7 +65,8 @@ function mapSupply(raw: any): Supply {
 
 export async function getSupplies(userId: string, farmId: string): Promise<ApiResponse<Supply[]>> {
   try {
-    const endpoint = `/Supply?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    // Reuse InventoryItem as the backing entity for Supplies
+    const endpoint = `/InventoryItem?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log('[v0] Fetching supplies:', url)
 
@@ -100,7 +103,8 @@ export async function getSupplies(userId: string, farmId: string): Promise<ApiRe
 
 export async function createSupply(input: SupplyInput): Promise<ApiResponse<Supply>> {
   try {
-    const endpoint = `/Supply`
+    // Create an InventoryItem record behind the scenes
+    const endpoint = `/InventoryItem`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log('[v0] Creating supply:', url)
 
@@ -110,14 +114,13 @@ export async function createSupply(input: SupplyInput): Promise<ApiResponse<Supp
       body: JSON.stringify({
         UserId: input.userId,
         FarmId: input.farmId,
-        Name: input.name,
-        Type: input.type,
-        Quantity: input.quantity,
-        Unit: input.unit,
-        Cost: input.cost,
-        Supplier: input.supplier ?? null,
-        PurchaseDate: input.purchaseDate ?? null,
-        Notes: input.notes ?? null,
+        ItemName: input.name,
+        Category: input.type,
+        QuantityInStock: input.quantity,
+        UnitOfMeasure: input.unit,
+        // ReorderLevel/IsActive can be extended later as needed
+        ReorderLevel: null,
+        IsActive: true,
       }),
     })
 
@@ -145,7 +148,7 @@ export async function createSupply(input: SupplyInput): Promise<ApiResponse<Supp
 
 export async function updateSupply(id: number, input: SupplyInput): Promise<ApiResponse<void>> {
   try {
-    const endpoint = `/Supply/${id}`
+    const endpoint = `/InventoryItem/${id}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log('[v0] Updating supply:', url)
 
@@ -153,17 +156,15 @@ export async function updateSupply(id: number, input: SupplyInput): Promise<ApiR
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify({
-        Id: id,
+        ItemId: id,
         UserId: input.userId,
         FarmId: input.farmId,
-        Name: input.name,
-        Type: input.type,
-        Quantity: input.quantity,
-        Unit: input.unit,
-        Cost: input.cost,
-        Supplier: input.supplier ?? null,
-        PurchaseDate: input.purchaseDate ?? null,
-        Notes: input.notes ?? null,
+        ItemName: input.name,
+        Category: input.type,
+        QuantityInStock: input.quantity,
+        UnitOfMeasure: input.unit,
+        ReorderLevel: null,
+        IsActive: true,
       }),
     })
 
@@ -204,7 +205,7 @@ export async function deleteSupply(id: number, userId: string, farmId: string): 
       };
     }
     
-    const endpoint = `/Supply/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    const endpoint = `/InventoryItem/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     const url = IS_BROWSER ? buildApiUrl(endpoint) : `${DIRECT_API_BASE_URL}/api${endpoint}`
     console.log('[v0] Deleting supply:', url)
 

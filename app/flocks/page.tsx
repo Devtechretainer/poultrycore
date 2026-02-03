@@ -455,6 +455,13 @@ export default function FlocksPage() {
     return text
   }
 
+  const getHouseName = (flock: Flock): string => {
+    if (!flock.houseId) return 'N/A'
+    const house = houses.find(h => h.houseId === flock.houseId)
+    if (!house) return `House ${flock.houseId}`
+    return (house as any).houseName || (house as any).name || `House ${house.houseId}`
+  }
+
   const calculateAge = (startDate: string) => {
     const start = new Date(startDate)
     const now = new Date()
@@ -777,6 +784,7 @@ export default function FlocksPage() {
                               )}
                             </div>
                           </TableHead>
+                          <TableHead className="font-semibold text-slate-900 min-w-[150px] hidden lg:table-cell">House</TableHead>
                           <TableHead className="font-semibold text-slate-900 min-w-[150px] hidden lg:table-cell">Batch</TableHead>
                           <TableHead 
                             className="font-semibold text-slate-900 min-w-[150px] hidden xl:table-cell cursor-pointer hover:bg-slate-50"
@@ -842,6 +850,12 @@ export default function FlocksPage() {
                               <div className="flex items-center gap-2">
                                 <Bird className="w-4 h-4 text-slate-400" />
                                 <span>{flock.breed}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-600 hidden lg:table-cell">
+                              <div className="flex items-center gap-2">
+                                <Home className="w-4 h-4 text-slate-400" />
+                                <span>{getHouseName(flock)}</span>
                               </div>
                             </TableCell>
                             <TableCell className="text-slate-600 hidden lg:table-cell">
