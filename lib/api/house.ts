@@ -51,9 +51,14 @@ function mapHouse(raw: any): House {
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
   try {
+    // Separate pathname and query string
+    const [pathname, queryString] = path.split('?')
+    const queryPart = queryString ? `?${queryString}` : ''
+    
     // Remove /api/ prefix if present (buildApiUrl handles it)
-    const cleanPath = path.startsWith('/api/') ? path.replace('/api', '') : path
-    const url = IS_BROWSER ? buildApiUrl(cleanPath) : `${DIRECT_API_BASE_URL}${path}`
+    const cleanPathname = pathname.startsWith('/api/') ? pathname.replace('/api', '') : pathname
+    const fullPath = cleanPathname + queryPart
+    const url = IS_BROWSER ? buildApiUrl(fullPath) : `${DIRECT_API_BASE_URL}${pathname}${queryPart}`
     
     const method = init?.method || 'GET'
     const headers = getAuthHeaders()
@@ -170,15 +175,23 @@ export async function updateHouse(id: number, input: HouseInput): Promise<ApiRes
 
   // For 204 No Content, fetch the updated house to return it
   if (res.data === undefined) {
-    const updatedRes = await getHouse(id, input.userId, input.farmId)
-    if (updatedRes.success && updatedRes.data) {
-      return {
-        success: true,
-        data: updatedRes.data,
-        message: "House updated successfully",
+    // Only try to fetch if we have valid userId and farmId
+    if (input.userId && input.farmId) {
+      try {
+        const updatedRes = await getHouse(id, input.userId, input.farmId)
+        if (updatedRes.success && updatedRes.data) {
+          return {
+            success: true,
+            data: updatedRes.data,
+            message: "House updated successfully",
+          }
+        }
+      } catch (error) {
+        // If fetch fails (e.g., 404), still return success since update succeeded
+        console.warn(`[v0] Failed to fetch updated house ${id}, but update succeeded:`, error)
       }
     }
-    // If fetch fails, still return success since update succeeded
+    // Return success with constructed house data since update succeeded
     return {
       success: true,
       data: { houseId: id, farmId: input.farmId, name: input.name, capacity: input.capacity, location: input.location } as House,
