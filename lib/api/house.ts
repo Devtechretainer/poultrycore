@@ -69,6 +69,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
       ...init,
     })
 
+    // Handle 204 No Content - no body to read
+    if (res.status === 204) {
+      return { success: true, data: undefined as any }
+    }
+
     const contentType = res.headers.get('content-type') || ''
     const body = contentType.includes('application/json') ? await res.json() : await res.text()
 
@@ -159,8 +164,26 @@ export async function updateHouse(id: number, input: HouseInput): Promise<ApiRes
     body: JSON.stringify(payload),
   })
 
-  if (!res.success || !res.data) {
+  if (!res.success) {
     return { success: false, message: res.message || "Failed to update house" } as ApiResponse<House>
+  }
+
+  // For 204 No Content, fetch the updated house to return it
+  if (res.data === undefined) {
+    const updatedRes = await getHouse(id, input.userId, input.farmId)
+    if (updatedRes.success && updatedRes.data) {
+      return {
+        success: true,
+        data: updatedRes.data,
+        message: "House updated successfully",
+      }
+    }
+    // If fetch fails, still return success since update succeeded
+    return {
+      success: true,
+      data: { houseId: id, farmId: input.farmId, name: input.name, capacity: input.capacity, location: input.location } as House,
+      message: "House updated successfully",
+    }
   }
 
   return {

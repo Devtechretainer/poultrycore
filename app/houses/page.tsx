@@ -61,7 +61,7 @@ export default function HousesPage() {
 
   const openEdit = (h: any) => {
     setEditing(h)
-    setName(h.houseName || "")
+    setName(h.name || h.houseName || "")
     setCapacity(h.capacity != null ? String(h.capacity) : "")
     setLocation(h.location || "")
     setDialogOpen(true)
@@ -141,7 +141,7 @@ export default function HousesPage() {
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
                           <Home className="h-5 w-5 text-blue-600" />
-                          <CardTitle className="text-lg">{h.houseName}</CardTitle>
+                          <CardTitle className="text-lg">{h.name || h.houseName}</CardTitle>
                         </div>
                         <div className="flex gap-1">
                           <Button size="icon" variant="ghost" onClick={() => openEdit(h)} className="h-8 w-8">
