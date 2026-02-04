@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Download, FileText } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { AuditLogsService } from "@/lib/services/audit-logs.service"
+import { getUserContext } from "@/lib/utils/user-context"
 
 interface AuditLog {
   id: string
@@ -63,8 +64,19 @@ export default function AuditLogsPage() {
            console.log("Synced token with apiClient")
          }
          
-         console.log("Calling AuditLogsService.getAll...")
+         // Get farmId from user context
+         const { farmId, userId } = getUserContext()
+         
+         if (!farmId) {
+           setError("Farm ID not found. Please log in again.")
+           setLoading(false)
+           return
+         }
+         
+         console.log("Calling AuditLogsService.getAll with farmId:", farmId)
          const data = await AuditLogsService.getAll({
+           farmId,
+           userId,
            page: 1,
            pageSize: 200,
          })

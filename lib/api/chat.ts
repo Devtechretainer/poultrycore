@@ -88,6 +88,22 @@ export async function sendMessage(threadId: string, userId: string, content: str
     headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify({ userId, content })
   })
+  
+  if (!r.ok) {
+    // Handle specific error cases
+    if (r.status === 403) {
+      const text = await r.text().catch(() => "")
+      throw new Error(`Permission denied: You are not a participant in this thread. ${text}`)
+    }
+    if (r.status === 401) {
+      throw new Error("Unauthorized: Please log in again.")
+    }
+    if (r.status === 400) {
+      const text = await r.text().catch(() => "")
+      throw new Error(`Invalid request: ${text || "Please check your message content."}`)
+    }
+  }
+  
   return json<ChatMessage>(r)
 }
 

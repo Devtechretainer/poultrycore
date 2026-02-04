@@ -350,10 +350,26 @@ export function FloatingChatWidget() {
       await connRef.current?.invoke("SendMessage", activeThread.threadId, userId, content)
 
       await loadThreads()
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Chat] Error sending message:", err)
       // Remove temp message on error
       setMessages((prev) => prev.filter(m => !m.messageId.startsWith("temp-")))
+      
+      // Show user-friendly error message
+      const errorMessage = err?.message || "Failed to send message"
+      if (errorMessage.includes("403") || errorMessage.includes("Forbid")) {
+        toast.error("Permission Denied", {
+          description: "You don't have permission to send messages in this thread. Please contact support if this persists.",
+        })
+      } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+        toast.error("Authentication Required", {
+          description: "Please log in again to send messages.",
+        })
+      } else {
+        toast.error("Failed to Send", {
+          description: errorMessage,
+        })
+      }
     }
   }
 
