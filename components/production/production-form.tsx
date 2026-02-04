@@ -333,134 +333,274 @@ export function ProductionForm({ open, onOpenChange, record, onSaved }: Producti
           <DialogDescription>{record ? "Update production data" : "Record daily production data"}</DialogDescription>
         </DialogHeader>
 
-        {error ? <div className="p-3 rounded border border-red-200 bg-red-50 text-red-700 mb-2">{error}</div> : null}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-12 gap-4">
-          <div className="col-span-6 space-y-2">
-            <Label>Flock</Label>
-            <Select value={form.flockId} onValueChange={(v) => setForm({ ...form, flockId: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select flock" />
-              </SelectTrigger>
-              <SelectContent>
-                {flocks.map((f) => (
-                  <SelectItem key={f.flockId} value={String(f.flockId)}>
-                    {f.name || `Flock ${f.flockId}`} (ID: {f.flockId})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {flocksError ? <div className="text-xs text-amber-600">{flocksError}</div> : null}
-            {form.flockId ? <div className="text-xs text-slate-500">Selected Flock ID: <span className="font-semibold">{form.flockId}</span></div> : null}
-          </div>
 
-          <div className="col-span-6 space-y-2">
-            <Label>Date</Label>
-            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
-            <div className="text-xs text-slate-500">Defaults to today. Change only if you are logging for a different date.</div>
-          </div>
 
-          {/* Time slots + total eggs on the same row */}
-          <div className="col-span-3 space-y-2">
-            <Label>Morning (9am)</Label>
-            <Input type="number" min="0" value={form.morning} onChange={(e) => setForm({ ...form, morning: e.target.value })} />
-          </div>
-          <div className="col-span-3 space-y-2">
-            <Label>Noon (12pm)</Label>
-            <Input type="number" min="0" value={form.noon} onChange={(e) => setForm({ ...form, noon: e.target.value })} />
-          </div>
-          <div className="col-span-3 space-y-2">
-            <Label>Evening (4pm)</Label>
-            <Input type="number" min="0" value={form.evening} onChange={(e) => setForm({ ...form, evening: e.target.value })} />
-          </div>
-          <div className="col-span-3 space-y-2">
-            <Label>Total Eggs</Label>
-            <div className="pt-2 font-semibold">{total}</div>
-          </div>
 
-          <div className="col-span-4 space-y-2">
-            <Label>Feed Type</Label>
-            <Select value={form.feedType} onValueChange={(v) => setForm({ ...form, feedType: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select feed type" />
-              </SelectTrigger>
-              <SelectContent>
-                {feedTypes.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="col-span-4 space-y-2">
-            <Label>Feed (kg)</Label>
-            <Input type="number" step="0.01" min="0" value={form.feedKg} onChange={(e) => setForm({ ...form, feedKg: e.target.value })} />
-          </div>
-          <div className="col-span-4 space-y-2">
-            <Label>Mortality</Label>
-            <Input type="number" min="0" value={form.mortality} onChange={(e) => setForm({ ...form, mortality: e.target.value })} />
-          </div>
-          <div className="col-span-6 space-y-2">
-            <Label>Num of Birds</Label>
-            <Input type="number" min="0" value={form.numBirds} onChange={(e) => setForm({ ...form, numBirds: e.target.value })} />
-          </div>
-          <div className="col-span-6">
-            <Label>Birds Left</Label>
-            <div className="pt-2 font-semibold">
-              {previousBirdsLeft !== null && (
-                <span className="text-xs text-slate-500 block">From previous: {previousBirdsLeft}</span>
-              )}
-              <span className={birdsLeft < 0 ? "text-red-600" : ""}>{birdsLeft}</span>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {error ? <div className="p-3 rounded border border-red-200 bg-red-50 text-red-700 mb-4">{error}</div> : null}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Section 1: Flock & Date */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+            <div className="bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+              Flock &amp; Date
+            </div>
+            <div className="grid grid-cols-12 gap-4 px-4 py-4">
+              <div className="col-span-12 md:col-span-6 space-y-2">
+                <Label>Flock</Label>
+                <Select value={form.flockId} onValueChange={(v) => setForm({ ...form, flockId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select flock" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {flocks.map((f) => (
+                      <SelectItem key={f.flockId} value={String(f.flockId)}>
+                        {f.name || `Flock ${f.flockId}`} (ID: {f.flockId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {flocksError ? <div className="text-xs text-amber-600">{flocksError}</div> : null}
+                {form.flockId ? (
+                  <div className="text-xs text-slate-500">
+                    Selected Flock ID: <span className="font-semibold">{form.flockId}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="col-span-12 md:col-span-6 space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  required
+                />
+                <div className="text-xs text-slate-500">
+                  Defaults to today. Change only if you are logging for a different date.
+                </div>
+              </div>
             </div>
           </div>
-          <div className="col-span-12 flex items-center gap-2">
-            <input id="manualAge" type="checkbox" checked={manualAge} onChange={(e) => setManualAge(e.target.checked)} />
-            <Label htmlFor="manualAge">Enter age manually</Label>
-          </div>
-          {manualAge ? (
-            <>
-              <div className="col-span-4 space-y-2">
-                <Label>Age (weeks)</Label>
-                <Input type="number" min="0" value={manualWeeks} onChange={(e) => setManualWeeks(e.target.value)} placeholder="e.g. 20" />
-              </div>
-              <div className="col-span-4 space-y-2">
-                <Label>Age (years)</Label>
-                <Input type="number" min="0" value={manualYears} onChange={(e) => setManualYears(e.target.value)} placeholder="e.g. 1" />
-              </div>
-              <div className="col-span-4 space-y-2">
-                <Label>Age (days)</Label>
-                <Input type="number" min="0" value={manualDays} onChange={(e) => setManualDays(e.target.value)} placeholder="e.g. 140" />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="col-span-3">
-                <Label>Age (weeks)</Label>
-                <div className="pt-2 font-semibold">{ageWeeks}</div>
-              </div>
-              <div className="col-span-3">
-                <Label>Age (years)</Label>
-                <div className="pt-2 font-semibold">{ageYears}</div>
-              </div>
-              <div className="col-span-3">
-                <Label>Age (days)</Label>
-                <div className="pt-2 font-semibold">{ageDays}</div>
-              </div>
-            </>
-          )}
 
-          <div className="col-span-6 space-y-2">
-            <Label>Medication</Label>
-            <Input value={form.medication} onChange={(e) => setForm({ ...form, medication: e.target.value })} placeholder="e.g., Free water" />
+          {/* Section 2: Egg Production & Feed */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+            <div className="bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+              Egg Production &amp; Feed
+            </div>
+            <div className="grid grid-cols-12 gap-4 px-4 py-4">
+              {/* Time slots + total eggs on the same row */}
+              <div className="col-span-12 md:col-span-3 space-y-2">
+                <Label>Morning (9am)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.morning}
+                  onChange={(e) => setForm({ ...form, morning: e.target.value })}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-3 space-y-2">
+                <Label>Noon (12pm)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.noon}
+                  onChange={(e) => setForm({ ...form, noon: e.target.value })}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-3 space-y-2">
+                <Label>Evening (4pm)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.evening}
+                  onChange={(e) => setForm({ ...form, evening: e.target.value })}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-3 space-y-2">
+                <Label>Total Eggs</Label>
+                <div className="pt-2 text-lg font-semibold text-slate-900">{total}</div>
+              </div>
+
+              <div className="col-span-12 md:col-span-4 space-y-2">
+                <Label>Feed Type</Label>
+                <Select value={form.feedType} onValueChange={(v) => setForm({ ...form, feedType: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select feed type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {feedTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-12 md:col-span-4 space-y-2">
+                <Label>Feed (kg)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.feedKg}
+                  onChange={(e) => setForm({ ...form, feedKg: e.target.value })}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-4 space-y-2">
+                <Label>Mortality</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.mortality}
+                  onChange={(e) => setForm({ ...form, mortality: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="col-span-12 space-y-2">
-            <Label>Notes</Label>
-            <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          {/* Section 3: Birds & Age */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+            <div className="bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+              Birds &amp; Age
+            </div>
+            <div className="grid grid-cols-12 gap-4 px-4 py-4">
+              <div className="col-span-12 md:col-span-6 space-y-2">
+                <Label>Num of Birds</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.numBirds}
+                  onChange={(e) => setForm({ ...form, numBirds: e.target.value })}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-6 space-y-2">
+                <Label>Birds Left</Label>
+                <div className="pt-2 font-semibold">
+                  {previousBirdsLeft !== null && (
+                    <span className="text-xs text-slate-500 block">
+                      From previous: {previousBirdsLeft}
+                    </span>
+                  )}
+                  <span className={birdsLeft < 0 ? "text-red-600" : ""}>{birdsLeft}</span>
+                </div>
+              </div>
+
+              <div className="col-span-12 flex items-center gap-2 pt-2">
+                <input
+                  id="manualAge"
+                  type="checkbox"
+                  checked={manualAge}
+                  onChange={(e) => setManualAge(e.target.checked)}
+                />
+                <Label htmlFor="manualAge">Enter age manually</Label>
+              </div>
+
+              {manualAge ? (
+                <>
+                  <div className="col-span-12 md:col-span-4 space-y-2">
+                    <Label>Age (weeks)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={manualWeeks}
+                      onChange={(e) => setManualWeeks(e.target.value)}
+                      placeholder="e.g. 20"
+                    />
+                  </div>
+                  <div className="col-span-12 md:col-span-4 space-y-2">
+                    <Label>Age (years)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={manualYears}
+                      onChange={(e) => setManualYears(e.target.value)}
+                      placeholder="e.g. 1"
+                    />
+                  </div>
+                  <div className="col-span-12 md:col-span-4 space-y-2">
+                    <Label>Age (days)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={manualDays}
+                      onChange={(e) => setManualDays(e.target.value)}
+                      placeholder="e.g. 140"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="col-span-12 md:col-span-4">
+                    <Label>Age (weeks)</Label>
+                    <div className="pt-2 font-semibold">{ageWeeks}</div>
+                  </div>
+                  <div className="col-span-12 md:col-span-4">
+                    <Label>Age (years)</Label>
+                    <div className="pt-2 font-semibold">{ageYears}</div>
+                  </div>
+                  <div className="col-span-12 md:col-span-4">
+                    <Label>Age (days)</Label>
+                    <div className="pt-2 font-semibold">{ageDays}</div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="col-span-12 flex gap-2">
-            <Button type="submit" disabled={saving} className="flex-1">{saving ? "Saving..." : record ? "Update" : "Log Production"}</Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          {/* Section 4: Medication & Notes */}
+          <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+            <div className="bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+              Medication &amp; Notes
+            </div>
+            <div className="grid grid-cols-12 gap-4 px-4 py-4">
+              <div className="col-span-12 md:col-span-6 space-y-2">
+                <Label>Medication</Label>
+                <Input
+                  value={form.medication}
+                  onChange={(e) => setForm({ ...form, medication: e.target.value })}
+                  placeholder="e.g., Free water"
+                />
+              </div>
+
+              <div className="col-span-12 space-y-2">
+                <Label>Notes</Label>
+                <Textarea
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 justify-end pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="min-w-[120px]"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="min-w-[160px]">
+              {saving ? "Saving..." : record ? "Update" : "Log Production"}
+            </Button>
           </div>
         </form>
       </DialogContent>
