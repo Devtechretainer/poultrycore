@@ -3,13 +3,13 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff } from "lucide-react"
-import { InventoryLogo } from "@/components/auth/logo"
 import { login } from "@/lib/api/auth"
 import Link from "next/link"
 import { SuccessModal } from "@/components/auth/success-modal"
@@ -124,8 +124,15 @@ export default function LoginPage() {
           <div className="w-full max-w-md">
             {/* Logo */}
             <div className="flex justify-center mb-8">
-              <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🏢</span>
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center shadow-lg">
+                <Image
+                  src="/logo.png"
+                  alt="Poultry Core logo"
+                  width={56}
+                  height={56}
+                  className="object-contain"
+                  priority
+                />
               </div>
             </div>
 
