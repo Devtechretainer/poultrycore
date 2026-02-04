@@ -118,8 +118,33 @@ export default function ProductionRecordsPage() {
   const total9AM = useMemo(() => filtered.reduce((s, r) => s + (Number(r.production9AM) || 0), 0), [filtered])
   const total12PM = useMemo(() => filtered.reduce((s, r) => s + (Number(r.production12PM) || 0), 0), [filtered])
   const total4PM = useMemo(() => filtered.reduce((s, r) => s + (Number(r.production4PM) || 0), 0), [filtered])
-  const totalBirds = useMemo(() => filtered.reduce((s, r) => s + (Number(r.noOfBirds) || 0), 0), [filtered])
-  const totalBirdsLeft = useMemo(() => filtered.reduce((s, r) => s + (Number(r.noOfBirdsLeft) || 0), 0), [filtered])
+
+  // For birds, we should not simply sum every row, otherwise the same flock
+  // gets counted multiple times across different dates.
+  // Instead, group by flockId and use the latest record per flock.
+  const { totalBirds, totalBirdsLeft } = useMemo(() => {
+    const latestByFlock = new Map<string, any>()
+
+    filtered.forEach((r: any) => {
+      const key = r.flockId != null ? String(r.flockId) : r.flockName ?? ''
+      if (!key) return
+
+      const existing = latestByFlock.get(key)
+      const currentDate = new Date(r.date)
+      const existingDate = existing ? new Date(existing.date) : null
+
+      if (!existing || (existingDate && currentDate > existingDate)) {
+        latestByFlock.set(key, r)
+      }
+    })
+
+    const latestRecords = Array.from(latestByFlock.values())
+
+    return {
+      totalBirds: latestRecords.reduce((s, r: any) => s + (Number(r.noOfBirds) || 0), 0),
+      totalBirdsLeft: latestRecords.reduce((s, r: any) => s + (Number(r.noOfBirdsLeft) || 0), 0),
+    }
+  }, [filtered])
   const avgEggsPerRecord = useMemo(() => filtered.length ? Math.round(totalEggs / filtered.length) : 0, [filtered, totalEggs])
   const formatAge = (r: any) => {
     const daysRaw = Number(r.ageInDays ?? r.ageDays)

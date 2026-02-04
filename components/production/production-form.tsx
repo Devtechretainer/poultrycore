@@ -327,7 +327,7 @@ export function ProductionForm({ open, onOpenChange, record, onSaved }: Producti
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl w-[900px]">
         <DialogHeader>
           <DialogTitle>{record ? "Edit Production Record" : "Log Production"}</DialogTitle>
           <DialogDescription>{record ? "Update production data" : "Record daily production data"}</DialogDescription>
@@ -357,19 +357,25 @@ export function ProductionForm({ open, onOpenChange, record, onSaved }: Producti
           <div className="col-span-6 space-y-2">
             <Label>Date</Label>
             <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+            <div className="text-xs text-slate-500">Defaults to today. Change only if you are logging for a different date.</div>
           </div>
 
-          <div className="col-span-4 space-y-2">
+          {/* Time slots + total eggs on the same row */}
+          <div className="col-span-3 space-y-2">
             <Label>Morning (9am)</Label>
             <Input type="number" min="0" value={form.morning} onChange={(e) => setForm({ ...form, morning: e.target.value })} />
           </div>
-          <div className="col-span-4 space-y-2">
+          <div className="col-span-3 space-y-2">
             <Label>Noon (12pm)</Label>
             <Input type="number" min="0" value={form.noon} onChange={(e) => setForm({ ...form, noon: e.target.value })} />
           </div>
-          <div className="col-span-4 space-y-2">
+          <div className="col-span-3 space-y-2">
             <Label>Evening (4pm)</Label>
             <Input type="number" min="0" value={form.evening} onChange={(e) => setForm({ ...form, evening: e.target.value })} />
+          </div>
+          <div className="col-span-3 space-y-2">
+            <Label>Total Eggs</Label>
+            <div className="pt-2 font-semibold">{total}</div>
           </div>
 
           <div className="col-span-4 space-y-2">
@@ -393,16 +399,11 @@ export function ProductionForm({ open, onOpenChange, record, onSaved }: Producti
             <Label>Mortality</Label>
             <Input type="number" min="0" value={form.mortality} onChange={(e) => setForm({ ...form, mortality: e.target.value })} />
           </div>
-          <div className="col-span-4 space-y-2">
+          <div className="col-span-6 space-y-2">
             <Label>Num of Birds</Label>
             <Input type="number" min="0" value={form.numBirds} onChange={(e) => setForm({ ...form, numBirds: e.target.value })} />
           </div>
-
-          <div className="col-span-3">
-            <Label>Total Eggs</Label>
-            <div className="pt-2 font-semibold">{total}</div>
-          </div>
-          <div className="col-span-3">
+          <div className="col-span-6">
             <Label>Birds Left</Label>
             <div className="pt-2 font-semibold">
               {previousBirdsLeft !== null && (
