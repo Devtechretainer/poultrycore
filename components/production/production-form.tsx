@@ -17,9 +17,15 @@ interface ProductionFormProps {
   onOpenChange: (open: boolean) => void
   record?: ProductionRecord | null
   onSaved?: () => void
+  /**
+   * Render mode:
+   * - "modal" (default): inside a Dialog
+   * - "page": full-width page form (no popup)
+   */
+  mode?: "modal" | "page"
 }
 
-export function ProductionForm({ open, onOpenChange, record, onSaved }: ProductionFormProps) {
+export function ProductionForm({ open, onOpenChange, record, onSaved, mode = "modal" }: ProductionFormProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [flocks, setFlocks] = useState<any[]>([])
