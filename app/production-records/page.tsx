@@ -256,9 +256,9 @@ export default function ProductionRecordsPage() {
                   <p className="text-slate-600">Track daily egg production and performance metrics</p>
                 </div>
               </div>
-              <Button className="gap-2" onClick={() => { setEditing(null); setFormOpen(true) }}>
+              <Button className="gap-2" onClick={() => router.push("/production-records/new")}>
                 <Plus className="w-4 h-4" /> Log Production
-                </Button>
+              </Button>
             </div>
 
             {error && (
