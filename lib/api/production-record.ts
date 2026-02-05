@@ -118,24 +118,23 @@ export async function getProductionRecords(userId: string, farmId: string) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] Production records fetch error:", errorText)
-      console.log("[v0] Using mock data for production records")
       
+      // Return error instead of mock data
       return {
-        success: true,
-        message: "Production records fetched successfully (mock data)",
-        data: mockProductionRecords,
+        success: false,
+        message: `Failed to fetch production records: ${response.status} - ${errorText || 'Server error'}`,
+        data: [],
       }
     }
 
     const contentType = response.headers.get("content-type")
     if (!contentType || !contentType.includes("application/json")) {
       console.error("[v0] Non-JSON response received")
-      console.log("[v0] Using mock data for production records")
       
       return {
-        success: true,
-        message: "Production records fetched successfully (mock data)",
-        data: mockProductionRecords,
+        success: false,
+        message: "Invalid response from server (non-JSON)",
+        data: [],
       }
     }
 
@@ -149,12 +148,13 @@ export async function getProductionRecords(userId: string, farmId: string) {
     }
   } catch (error) {
     console.error("[v0] Production records fetch error:", error)
-    console.log("[v0] Using mock data for production records")
     
+    // Return error instead of mock data
+    const errorMessage = error instanceof Error ? error.message : 'Network error'
     return {
-      success: true,
-      message: "Production records fetched successfully (mock data)",
-      data: mockProductionRecords,
+      success: false,
+      message: `Failed to connect to server: ${errorMessage}. Please check if the API is running and CORS is configured.`,
+      data: [],
     }
   }
 }
@@ -176,21 +176,11 @@ export async function getProductionRecord(id: number, userId: string, farmId: st
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] Production record fetch error:", errorText)
-      console.log("[v0] Using mock data for production record")
       
-      const record = mockProductionRecords.find(r => r.id === id)
-      if (record) {
-        return {
-          success: true,
-          message: "Production record fetched successfully (mock data)",
-          data: record,
-        }
-      } else {
-        return {
-          success: false,
-          message: "Production record not found",
-          data: null,
-        }
+      return {
+        success: false,
+        message: `Failed to fetch production record: ${response.status} - ${errorText || 'Server error'}`,
+        data: null,
       }
     }
 
@@ -202,21 +192,12 @@ export async function getProductionRecord(id: number, userId: string, farmId: st
     }
   } catch (error) {
     console.error("[v0] Production record fetch error:", error)
-    console.log("[v0] Using mock data for production record")
     
-    const record = mockProductionRecords.find(r => r.id === id)
-    if (record) {
-      return {
-        success: true,
-        message: "Production record fetched successfully (mock data)",
-        data: record,
-      }
-    } else {
-      return {
-        success: false,
-        message: "Production record not found",
-        data: null,
-      }
+    const errorMessage = error instanceof Error ? error.message : 'Network error'
+    return {
+      success: false,
+      message: `Failed to connect to server: ${errorMessage}`,
+      data: null,
     }
   }
 }
