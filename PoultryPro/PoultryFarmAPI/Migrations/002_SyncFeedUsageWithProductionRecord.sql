@@ -1,0 +1,232 @@
+-- ============================================================
+-- MIGRATION 002: Sync Feed Usage with Production Record
+-- ============================================================
+-- This migration creates triggers and procedures to automatically
+-- sync FeedUsage records when ProductionRecord is updated.
+-- ============================================================
+-- RUN THIS SCRIPT AFTER MIGRATION 001
+-- ============================================================
+
+-- Step 1: Add a column to track if FeedUsage came from ProductionRecord
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[FeedUsage]') AND name = 'SourceProductionRecordId')
+BEGIN
+    ALTER TABLE [dbo].[FeedUsage] ADD [SourceProductionRecordId] INT NULL;
+    PRINT 'Added SourceProductionRecordId column to FeedUsage table';
+END
+ELSE
+BEGIN
+    PRINT 'SourceProductionRecordId column already exists';
+END
+GO
+
+-- Step 2: Create a trigger to sync FeedUsage when ProductionRecord is inserted
+IF OBJECT_ID('trg_ProductionRecord_InsertFeedUsage', 'TR') IS NOT NULL
+    DROP TRIGGER trg_ProductionRecord_InsertFeedUsage;
+GO
+
+CREATE TRIGGER [dbo].[trg_ProductionRecord_InsertFeedUsage]
+ON [dbo].[ProductionRecord]
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Insert FeedUsage record for each new ProductionRecord with FeedKg > 0
+    INSERT INTO [dbo].[FeedUsage] (
+        FlockId, UsageDate, FeedType, QuantityKg, UserId, FarmId, SourceProductionRecordId
+    )
+    SELECT 
+        ISNULL(i.FlockId, 0),
+        i.[Date],
+        'General Feed',  -- Default feed type from production records
+        i.FeedKg,
+        i.UserId,
+        i.FarmId,
+        i.Id
+    FROM inserted i
+    WHERE i.FeedKg > 0 AND i.FlockId IS NOT NULL;
+    
+    -- Log the sync
+    IF @@ROWCOUNT > 0
+    BEGIN
+        PRINT 'FeedUsage record(s) created from ProductionRecord insert';
+    END
+END
+GO
+
+PRINT 'Created trigger trg_ProductionRecord_InsertFeedUsage';
+GO
+
+-- Step 3: Create a trigger to sync FeedUsage when ProductionRecord is updated
+IF OBJECT_ID('trg_ProductionRecord_UpdateFeedUsage', 'TR') IS NOT NULL
+    DROP TRIGGER trg_ProductionRecord_UpdateFeedUsage;
+GO
+
+CREATE TRIGGER [dbo].[trg_ProductionRecord_UpdateFeedUsage]
+ON [dbo].[ProductionRecord]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Update existing FeedUsage records that came from this ProductionRecord
+    UPDATE fu
+    SET 
+        fu.UsageDate = i.[Date],
+        fu.QuantityKg = i.FeedKg,
+        fu.FlockId = ISNULL(i.FlockId, fu.FlockId)
+    FROM [dbo].[FeedUsage] fu
+    INNER JOIN inserted i ON fu.SourceProductionRecordId = i.Id
+    WHERE i.FeedKg > 0;
+    
+    -- Delete FeedUsage if FeedKg is now 0
+    DELETE fu
+    FROM [dbo].[FeedUsage] fu
+    INNER JOIN inserted i ON fu.SourceProductionRecordId = i.Id
+    WHERE i.FeedKg = 0;
+    
+    -- Insert new FeedUsage if FeedKg changed from 0 to > 0
+    INSERT INTO [dbo].[FeedUsage] (
+        FlockId, UsageDate, FeedType, QuantityKg, UserId, FarmId, SourceProductionRecordId
+    )
+    SELECT 
+        ISNULL(i.FlockId, 0),
+        i.[Date],
+        'General Feed',
+        i.FeedKg,
+        i.UserId,
+        i.FarmId,
+        i.Id
+    FROM inserted i
+    LEFT JOIN [dbo].[FeedUsage] fu ON fu.SourceProductionRecordId = i.Id
+    WHERE i.FeedKg > 0 AND fu.FeedUsageId IS NULL AND i.FlockId IS NOT NULL;
+END
+GO
+
+PRINT 'Created trigger trg_ProductionRecord_UpdateFeedUsage';
+GO
+
+-- Step 4: Create a trigger to delete FeedUsage when ProductionRecord is deleted
+IF OBJECT_ID('trg_ProductionRecord_DeleteFeedUsage', 'TR') IS NOT NULL
+    DROP TRIGGER trg_ProductionRecord_DeleteFeedUsage;
+GO
+
+CREATE TRIGGER [dbo].[trg_ProductionRecord_DeleteFeedUsage]
+ON [dbo].[ProductionRecord]
+AFTER DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Delete associated FeedUsage records
+    DELETE fu
+    FROM [dbo].[FeedUsage] fu
+    INNER JOIN deleted d ON fu.SourceProductionRecordId = d.Id;
+END
+GO
+
+PRINT 'Created trigger trg_ProductionRecord_DeleteFeedUsage';
+GO
+
+-- Step 5: Migrate existing ProductionRecord feed data to FeedUsage
+-- (Only records that don't already have a linked FeedUsage)
+PRINT 'Migrating existing ProductionRecord feed data to FeedUsage...';
+
+INSERT INTO [dbo].[FeedUsage] (
+    FlockId, UsageDate, FeedType, QuantityKg, UserId, FarmId, SourceProductionRecordId
+)
+SELECT 
+    ISNULL(pr.FlockId, 0),
+    pr.[Date],
+    'General Feed',
+    pr.FeedKg,
+    ISNULL(pr.UserId, pr.CreatedBy),
+    pr.FarmId,
+    pr.Id
+FROM [dbo].[ProductionRecord] pr
+WHERE pr.FeedKg > 0 
+AND pr.FlockId IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM [dbo].[FeedUsage] fu 
+    WHERE fu.SourceProductionRecordId = pr.Id
+);
+
+PRINT 'Migrated ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' existing ProductionRecord feed entries to FeedUsage.';
+GO
+
+-- Step 6: Update spFeedUsage_GetAll to include source info
+IF OBJECT_ID('spFeedUsage_GetAll', 'P') IS NOT NULL
+    DROP PROCEDURE spFeedUsage_GetAll;
+GO
+
+CREATE PROCEDURE [dbo].[spFeedUsage_GetAll]
+    @FarmId NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        FeedUsageId,
+        FlockId,
+        UsageDate,
+        FeedType,
+        QuantityKg,
+        UserId,
+        FarmId,
+        CASE 
+            WHEN SourceProductionRecordId IS NOT NULL THEN 'Production Record'
+            ELSE 'Manual Entry'
+        END AS Source,
+        SourceProductionRecordId
+    FROM [dbo].[FeedUsage]
+    WHERE FarmId = @FarmId
+    ORDER BY UsageDate DESC;
+END
+GO
+
+PRINT 'Updated spFeedUsage_GetAll to include source information';
+GO
+
+-- Step 7: Update spFeedUsage_GetById
+IF OBJECT_ID('spFeedUsage_GetById', 'P') IS NOT NULL
+    DROP PROCEDURE spFeedUsage_GetById;
+GO
+
+CREATE PROCEDURE [dbo].[spFeedUsage_GetById]
+    @FeedUsageId INT,
+    @FarmId NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        FeedUsageId,
+        FlockId,
+        UsageDate,
+        FeedType,
+        QuantityKg,
+        UserId,
+        FarmId,
+        CASE 
+            WHEN SourceProductionRecordId IS NOT NULL THEN 'Production Record'
+            ELSE 'Manual Entry'
+        END AS Source,
+        SourceProductionRecordId
+    FROM [dbo].[FeedUsage]
+    WHERE FeedUsageId = @FeedUsageId AND FarmId = @FarmId;
+END
+GO
+
+PRINT 'Updated spFeedUsage_GetById';
+GO
+
+PRINT '';
+PRINT '=============================================================';
+PRINT 'MIGRATION 002 COMPLETED SUCCESSFULLY!';
+PRINT '=============================================================';
+PRINT 'Feed Usage table is now automatically synced with Production Records.';
+PRINT 'When you enter FeedKg in Production Records, it will automatically';
+PRINT 'appear in the Feed Usage page as "General Feed".';
+PRINT '=============================================================';
+GO
+
