@@ -59,16 +59,11 @@ export function usePermissions(): UserPermissions {
 
     // Determine if user is admin
     // Admin can be identified by:
-    // 1. NOT being staff (staff = employee with limited access)
-    // 2. Having "Admin" or "FarmAdmin" role (and not staff)
-    // 3. Being a subscriber (owner) AND not being staff
-    const isAdmin = !isStaff && (
-      roles.includes("Admin") || 
-      roles.includes("FarmAdmin") || 
-      roles.includes("Owner") ||
-      isSubscriber ||
-      true  // Default: if not staff, assume admin
-    )
+    // 1. Having "Admin" or "FarmAdmin" role (even if marked as staff)
+    // 2. Being a subscriber (owner)
+    // 3. NOT being staff (non-staff users default to admin)
+    const hasAdminRole = roles.includes("Admin") || roles.includes("FarmAdmin") || roles.includes("Owner")
+    const isAdmin = hasAdminRole || isSubscriber || !isStaff
 
     // Set permissions based on role
     const userPermissions: UserPermissions = {

@@ -27,7 +27,11 @@ interface InventoryItem {
   supplier?: string
   location?: string
   expiryDate?: string
+  entryDate?: string
   notes?: string
+  // For eggs: crates and loose eggs
+  crates?: number
+  looseEggs?: number
 }
 
 export default function InventoryPage() {
@@ -57,10 +61,16 @@ export default function InventoryPage() {
     supplier: "",
     location: "",
     expiryDate: "",
+    entryDate: new Date().toISOString().split('T')[0],
     notes: "",
+    crates: 0,
+    looseEggs: 0,
   })
 
-  const categories = ["Feed", "Medication", "Equipment", "Supplies", "Other"]
+  // Check if current item is eggs (for crates input)
+  const isEggsCategory = formData.category === "Eggs" || formData.name.toLowerCase().includes("egg")
+
+  const categories = ["Feed", "Medication", "Equipment", "Supplies", "Eggs", "Other"]
 
   useEffect(() => {
     loadData()
@@ -186,7 +196,10 @@ export default function InventoryPage() {
       supplier: "",
       location: "",
       expiryDate: "",
+      entryDate: new Date().toISOString().split('T')[0],
       notes: "",
+      crates: 0,
+      looseEggs: 0,
     })
   }
 
@@ -283,6 +296,55 @@ export default function InventoryPage() {
                         </Select>
                       </div>
                     </div>
+                    {/* Eggs: Crates + Loose Eggs Input */}
+                    {isEggsCategory && (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                        <Label className="text-amber-800 font-semibold">Enter Egg Inventory (Crates × 30 + Loose Eggs)</Label>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="crates" className="text-sm">Crates (30 eggs each)</Label>
+                            <Input
+                              id="crates"
+                              type="number"
+                              min="0"
+                              value={formData.crates || 0}
+                              onChange={(e) => {
+                                const crates = parseInt(e.target.value) || 0
+                                const loose = formData.looseEggs || 0
+                                const total = (crates * 30) + loose
+                                setFormData(prev => ({ ...prev, crates, quantity: total, unit: "eggs" }))
+                              }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="looseEggs" className="text-sm">Loose Eggs</Label>
+                            <Input
+                              id="looseEggs"
+                              type="number"
+                              min="0"
+                              max="29"
+                              value={formData.looseEggs || 0}
+                              onChange={(e) => {
+                                const loose = parseInt(e.target.value) || 0
+                                const crates = formData.crates || 0
+                                const total = (crates * 30) + loose
+                                setFormData(prev => ({ ...prev, looseEggs: loose, quantity: total, unit: "eggs" }))
+                              }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Total Eggs</Label>
+                            <div className="h-10 px-3 py-2 bg-white border rounded-md flex items-center font-bold text-amber-700">
+                              {((formData.crates || 0) * 30 + (formData.looseEggs || 0)).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-amber-600">
+                          Calculation: {formData.crates || 0} crates × 30 + {formData.looseEggs || 0} loose = {((formData.crates || 0) * 30 + (formData.looseEggs || 0)).toLocaleString()} eggs
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="quantity">Quantity *</Label>
@@ -293,7 +355,10 @@ export default function InventoryPage() {
                           value={formData.quantity}
                           onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
                           required
+                          disabled={isEggsCategory}
+                          className={isEggsCategory ? "bg-slate-100" : ""}
                         />
+                        {isEggsCategory && <p className="text-xs text-slate-500">Auto-calculated from crates + eggs above</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="unit">Unit *</Label>
@@ -303,6 +368,8 @@ export default function InventoryPage() {
                           value={formData.unit}
                           onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
                           required
+                          disabled={isEggsCategory}
+                          className={isEggsCategory ? "bg-slate-100" : ""}
                         />
                       </div>
                       <div className="space-y-2">
@@ -335,14 +402,27 @@ export default function InventoryPage() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="expiryDate">Expiry Date</Label>
-                      <Input
-                        id="expiryDate"
-                        type="date"
-                        value={formData.expiryDate}
-                        onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="entryDate">Entry Date *</Label>
+                        <Input
+                          id="entryDate"
+                          type="date"
+                          value={formData.entryDate || new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setFormData(prev => ({ ...prev, entryDate: e.target.value }))}
+                          required
+                        />
+                        <p className="text-xs text-slate-500">Date this entry was recorded</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="expiryDate">Expiry Date</Label>
+                        <Input
+                          id="expiryDate"
+                          type="date"
+                          value={formData.expiryDate}
+                          onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>
@@ -485,6 +565,7 @@ export default function InventoryPage() {
                         <TableHead>Quantity</TableHead>
                         <TableHead>Unit Price</TableHead>
                         <TableHead>Total Value</TableHead>
+                        <TableHead>Entry Date</TableHead>
                         <TableHead>Supplier</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -500,6 +581,7 @@ export default function InventoryPage() {
                           <TableCell>{item.quantity.toLocaleString()} {item.unit}</TableCell>
                           <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
                           <TableCell>${(item.quantity * item.unitPrice).toFixed(2)}</TableCell>
+                          <TableCell>{item.entryDate ? new Date(item.entryDate).toLocaleDateString() : "-"}</TableCell>
                           <TableCell>{item.supplier || "-"}</TableCell>
                           <TableCell>{item.location || "-"}</TableCell>
                           <TableCell className="text-right">
@@ -566,6 +648,55 @@ export default function InventoryPage() {
                       </Select>
                     </div>
                   </div>
+                  {/* Eggs: Crates + Loose Eggs Input */}
+                  {isEggsCategory && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                      <Label className="text-amber-800 font-semibold">Enter Egg Inventory (Crates × 30 + Loose Eggs)</Label>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-crates" className="text-sm">Crates (30 eggs each)</Label>
+                          <Input
+                            id="edit-crates"
+                            type="number"
+                            min="0"
+                            value={formData.crates || 0}
+                            onChange={(e) => {
+                              const crates = parseInt(e.target.value) || 0
+                              const loose = formData.looseEggs || 0
+                              const total = (crates * 30) + loose
+                              setFormData(prev => ({ ...prev, crates, quantity: total, unit: "eggs" }))
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-looseEggs" className="text-sm">Loose Eggs</Label>
+                          <Input
+                            id="edit-looseEggs"
+                            type="number"
+                            min="0"
+                            max="29"
+                            value={formData.looseEggs || 0}
+                            onChange={(e) => {
+                              const loose = parseInt(e.target.value) || 0
+                              const crates = formData.crates || 0
+                              const total = (crates * 30) + loose
+                              setFormData(prev => ({ ...prev, looseEggs: loose, quantity: total, unit: "eggs" }))
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Total Eggs</Label>
+                          <div className="h-10 px-3 py-2 bg-white border rounded-md flex items-center font-bold text-amber-700">
+                            {((formData.crates || 0) * 30 + (formData.looseEggs || 0)).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-amber-600">
+                        Calculation: {formData.crates || 0} crates × 30 + {formData.looseEggs || 0} loose = {((formData.crates || 0) * 30 + (formData.looseEggs || 0)).toLocaleString()} eggs
+                      </p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-quantity">Quantity *</Label>
@@ -576,7 +707,10 @@ export default function InventoryPage() {
                         value={formData.quantity}
                         onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
                         required
+                        disabled={isEggsCategory}
+                        className={isEggsCategory ? "bg-slate-100" : ""}
                       />
+                      {isEggsCategory && <p className="text-xs text-slate-500">Auto-calculated from crates + eggs</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="edit-unit">Unit *</Label>
@@ -586,6 +720,8 @@ export default function InventoryPage() {
                         value={formData.unit}
                         onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
                         required
+                        disabled={isEggsCategory}
+                        className={isEggsCategory ? "bg-slate-100" : ""}
                       />
                     </div>
                     <div className="space-y-2">
@@ -618,14 +754,27 @@ export default function InventoryPage() {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-expiryDate">Expiry Date</Label>
-                    <Input
-                      id="edit-expiryDate"
-                      type="date"
-                      value={formData.expiryDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-entryDate">Entry Date *</Label>
+                      <Input
+                        id="edit-entryDate"
+                        type="date"
+                        value={formData.entryDate || new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setFormData(prev => ({ ...prev, entryDate: e.target.value }))}
+                        required
+                      />
+                      <p className="text-xs text-slate-500">Date this entry was recorded</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-expiryDate">Expiry Date</Label>
+                      <Input
+                        id="edit-expiryDate"
+                        type="date"
+                        value={formData.expiryDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-notes">Notes</Label>

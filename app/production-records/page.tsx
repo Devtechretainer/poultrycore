@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Plus, Calendar as CalendarIcon, Download, Search, X, RefreshCw } from "lucide-react"
 import { getProductionRecords, deleteProductionRecord, type ProductionRecord } from "@/lib/api/production-record"
 import { getUserContext } from "@/lib/utils/user-context"
+import { usePermissions } from "@/hooks/use-permissions"
 import { ProductionForm } from "@/components/production/production-form"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -23,6 +25,7 @@ import { exportReportToPDF, downloadBlob, getReportContext } from "@/lib/api/rep
 
 export default function ProductionRecordsPage() {
   const router = useRouter()
+  const permissions = usePermissions()
   const [records, setRecords] = useState<ProductionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -34,6 +37,10 @@ export default function ProductionRecordsPage() {
   const [selectedFlockId, setSelectedFlockId] = useState<string>("ALL")
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL")
   const [selectedYear, setSelectedYear] = useState<string>("ALL")
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
 
   // Modal state
   const [formOpen, setFormOpen] = useState(false)
@@ -146,6 +153,54 @@ export default function ProductionRecordsPage() {
     }
   }, [filtered])
   const avgEggsPerRecord = useMemo(() => filtered.length ? Math.round(totalEggs / filtered.length) : 0, [filtered, totalEggs])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRecords = useMemo(() => filtered.slice(startIndex, endIndex), [filtered, startIndex, endIndex])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, dateFrom, dateTo, selectedFlockId, selectedMonth, selectedYear])
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1)
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
+  }
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i)
+        pages.push('ellipsis')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push('ellipsis')
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        pages.push('ellipsis')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+        pages.push('ellipsis')
+        pages.push(totalPages)
+      }
+    }
+    return pages
+  }
+
   const formatAge = (r: any) => {
     const daysRaw = Number(r.ageInDays ?? r.ageDays)
     const weeksRaw = Number(r.ageInWeeks ?? r.ageWeeks)
@@ -393,14 +448,14 @@ export default function ProductionRecordsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filtered.length === 0 ? (
+                        {paginatedRecords.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={14} className="py-12 text-center text-slate-500">
                               No records found for the selected filters.
                               <Button variant="link" className="ml-1" onClick={() => { setEditing(null); setFormOpen(true) }}>Log one now</Button>
                             </TableCell>
                           </TableRow>
-                        ) : filtered.map((r: any) => (
+                        ) : paginatedRecords.map((r: any) => (
                           <TableRow key={r.id} className="hover:bg-slate-50/60">
                             <TableCell className="px-3 py-2">{new Date(r.date).toLocaleDateString()}</TableCell>
                             <TableCell className="px-3 py-2">{r.flockId != null ? `#${r.flockId}` : "-"}</TableCell>
@@ -420,7 +475,9 @@ export default function ProductionRecordsPage() {
                             <TableCell className="text-right px-3 py-2">
                               <div className="flex items-center justify-end gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => { setEditing(r); setFormOpen(true) }}>Edit</Button>
-                                <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(r.id)}>Delete</Button>
+                                {permissions.canDelete && (
+                                  <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(r.id)}>Delete</Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -448,6 +505,59 @@ export default function ProductionRecordsPage() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Pagination */}
+            {!loading && filtered.length > 0 && totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-slate-600">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} records
+                  </span>
+                  <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1) }}>
+                    <SelectTrigger className="w-[100px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 / page</SelectItem>
+                      <SelectItem value="25">25 / page</SelectItem>
+                      <SelectItem value="50">50 / page</SelectItem>
+                      <SelectItem value="100">100 / page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={handlePreviousPage}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {getPageNumbers().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === 'ellipsis' ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            onClick={() => handlePageChange(page as number)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={handleNextPage}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             )}
 
             {/* Summary footer to mirror client */}

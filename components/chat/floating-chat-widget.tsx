@@ -7,7 +7,7 @@ import { getEmployees, type Employee } from "@/lib/api/admin"
 import { getUserContext } from "@/lib/utils/user-context"
 import { usePermissions } from "@/hooks/use-permissions"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -404,10 +404,15 @@ export function FloatingChatWidget() {
         <DialogContent className="w-[95vw] max-w-4xl h-[85vh] max-h-[800px] flex flex-col p-0">
           <DialogHeader className="px-6 py-4 border-b">
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Chat
-              </DialogTitle>
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Chat
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Chat with team members and administrators
+                </DialogDescription>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
