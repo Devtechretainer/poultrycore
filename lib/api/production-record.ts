@@ -1,3 +1,5 @@
+import { getAuthHeaders } from './config'
+
 function normalizeApiBase(raw?: string, fallback = 'farmapi.techretainer.com') {
   const val = raw || fallback
   return val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`
