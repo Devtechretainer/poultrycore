@@ -34,7 +34,8 @@ export async function getEggProductions(userId?: string, farmId?: string): Promi
     if (userId) params.append('userId', userId);
     if (farmId) params.append('farmId', farmId);
     
-    const url = `${API_BASE_URL}/api/EggProduction?${params.toString()}`;
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/EggProduction?${params.toString()}`;
     console.log("[v0] Fetching egg productions:", url);
 
     const response = await fetch(url, {
@@ -43,7 +44,6 @@ export async function getEggProductions(userId?: string, farmId?: string): Promi
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      mode: 'cors',
     });
 
     console.log("[v0] Egg productions response status:", response.status);
@@ -82,7 +82,8 @@ export async function getEggProductions(userId?: string, farmId?: string): Promi
       params.append('userId', userId);
       params.append('farmId', farmId);
   
-      const url = `${API_BASE_URL}/api/EggProduction/${productionId}?${params.toString()}`;
+      // Use proxy to avoid CORS issues
+      const url = `/api/proxy/EggProduction/${productionId}?${params.toString()}`;
       console.log("[v0] Deleting egg production:", url);
   
       const response = await fetch(url, {
@@ -91,7 +92,6 @@ export async function getEggProductions(userId?: string, farmId?: string): Promi
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        mode: 'cors',
       });
   
       console.log("[v0] Egg production delete response status:", response.status);
@@ -134,7 +134,8 @@ export interface EggProductionInput {
 
 export async function createEggProduction(eggProduction: EggProductionInput): Promise<ApiResponse<EggProduction>> {
   try {
-    const url = `${API_BASE_URL}/api/EggProduction`;
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/EggProduction`;
     console.log("[v0] Creating egg production:", url, eggProduction);
 
     const response = await fetch(url, {
@@ -143,7 +144,6 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      mode: 'cors',
       body: JSON.stringify(eggProduction),
     });
 
@@ -181,7 +181,8 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
         params.append('userId', userId);
         params.append('farmId', farmId);
     
-        const url = `${API_BASE_URL}/api/EggProduction/${id}?${params.toString()}`;
+        // Use proxy to avoid CORS issues
+        const url = `/api/proxy/EggProduction/${id}?${params.toString()}`;
         console.log("[v0] Fetching egg production:", url);
     
         const response = await fetch(url, {
@@ -190,7 +191,6 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          mode: 'cors',
         });
     
         console.log("[v0] Egg production fetch response status:", response.status);
@@ -223,7 +223,8 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
     
     export async function updateEggProduction(id: number, eggProduction: Partial<EggProductionInput>): Promise<ApiResponse> {
       try {
-        const url = `${API_BASE_URL}/api/EggProduction/${id}`;
+        // Use proxy to avoid CORS issues
+        const url = `/api/proxy/EggProduction/${id}`;
         console.log("[v0] Updating egg production:", url, eggProduction);
     
         const response = await fetch(url, {
@@ -232,7 +233,6 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          mode: 'cors',
           body: JSON.stringify(eggProduction),
         });
     
@@ -243,7 +243,7 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
           console.error("[v0] Egg production update error:", errorText);
           return {
             success: false,
-            message: "Failed to update egg production",
+            message: errorText || "Failed to update egg production",
           };
         }
     
@@ -255,7 +255,7 @@ export async function createEggProduction(eggProduction: EggProductionInput): Pr
         console.error("[v0] Egg production update error:", error);
         return {
           success: false,
-          message: "Failed to update egg production",
+          message: "Failed to update egg production. Network error.",
         };
       }
     }
