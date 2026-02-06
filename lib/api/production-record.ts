@@ -103,7 +103,8 @@ let nextRecordId = 3
 
 export async function getProductionRecords(userId: string, farmId: string) {
   try {
-    const url = `${API_BASE_URL}/api/ProductionRecord?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/ProductionRecord?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     console.log("[v0] Fetching production records:", url)
 
     const response = await fetch(url, {
@@ -112,7 +113,6 @@ export async function getProductionRecords(userId: string, farmId: string) {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      mode: 'cors',
     })
 
     console.log("[v0] Production records response status:", response.status)
@@ -163,7 +163,8 @@ export async function getProductionRecords(userId: string, farmId: string) {
 
 export async function getProductionRecord(id: number, userId: string, farmId: string) {
   try {
-    const url = `${API_BASE_URL}/api/ProductionRecord/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/ProductionRecord/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     console.log("[v0] Fetching production record:", url)
 
     const response = await fetch(url, {
@@ -172,7 +173,6 @@ export async function getProductionRecord(id: number, userId: string, farmId: st
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      mode: 'cors',
     })
 
     if (!response.ok) {
@@ -206,7 +206,8 @@ export async function getProductionRecord(id: number, userId: string, farmId: st
 
 export async function createProductionRecord(record: ProductionRecordInput) {
   try {
-    const url = `${API_BASE_URL}/api/ProductionRecord`
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/ProductionRecord`
     console.log("[v0] Creating production record:", url)
 
     // Only send fields expected by the SP (omit id/createdAt/updatedAt)
@@ -236,7 +237,6 @@ export async function createProductionRecord(record: ProductionRecordInput) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      mode: 'cors',
       body: JSON.stringify(payload),
     })
 
@@ -279,7 +279,8 @@ export async function createProductionRecord(record: ProductionRecordInput) {
 
 export async function updateProductionRecord(id: number, record: ProductionRecordInput) {
   try {
-    const url = `${API_BASE_URL}/api/ProductionRecord/${id}`
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/ProductionRecord/${id}`
     console.log("[v0] Updating production record:", url)
 
     const payload: any = {
@@ -309,7 +310,6 @@ export async function updateProductionRecord(id: number, record: ProductionRecor
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      mode: 'cors',
       body: JSON.stringify(payload),
     })
 
@@ -364,7 +364,8 @@ export async function deleteProductionRecord(id: number, userId: string, farmId:
       }
     }
     
-    const url = `${API_BASE_URL}/api/ProductionRecord/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
+    // Use proxy to avoid CORS issues
+    const url = `/api/proxy/ProductionRecord/${id}?userId=${encodeURIComponent(userId)}&farmId=${encodeURIComponent(farmId)}`
     console.log("[v0] Deleting production record:", url)
 
     const response = await fetch(url, {
@@ -374,7 +375,6 @@ export async function deleteProductionRecord(id: number, userId: string, farmId:
         "Content-Type": "application/json",
         ...getAuthHeaders(),
       },
-      mode: 'cors',
     })
 
     if (!response.ok) {
