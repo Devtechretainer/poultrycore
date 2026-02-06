@@ -10,6 +10,7 @@ export interface EggProduction {
   farmId: string;
   userId: string;
   flockId: number;
+  flockName?: string;
   productionDate: string;
   eggCount: number;
   production9AM: number;

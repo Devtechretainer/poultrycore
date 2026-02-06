@@ -107,8 +107,10 @@ export default function EggProductionsPage() {
     setSelectedFlock("ALL")
   }
 
-  const getFlockName = (flockId: number) => {
-    return flockBatches.find(fb => fb.batchId === flockId)?.batchName || "Unknown Flock"
+  const getFlockName = (prod: EggProduction) => {
+    // Use flockName from API response if available, otherwise fallback to lookup
+    if (prod.flockName) return prod.flockName
+    return flockBatches.find(fb => fb.batchId === prod.flockId)?.batchName || "Unknown Flock"
   }
 
   const filteredEggProductions = useMemo(() => {
@@ -117,7 +119,7 @@ export default function EggProductionsPage() {
     if (search) {
       const query = search.toLowerCase()
       currentList = currentList.filter(prod => 
-        getFlockName(prod.flockId).toLowerCase().includes(query) ||
+        getFlockName(prod).toLowerCase().includes(query) ||
         (prod.notes ?? '').toLowerCase().includes(query)
       )
     }
@@ -332,7 +334,7 @@ export default function EggProductionsPage() {
                             <TableCell className="font-medium text-slate-900">
                               {new Date(prod.productionDate).toLocaleDateString()}
                             </TableCell>
-                            <TableCell>{getFlockName(prod.flockId)}</TableCell>
+                            <TableCell>{getFlockName(prod)}</TableCell>
                             <TableCell className="hidden sm:table-cell">{prod.totalProduction}</TableCell>
                             <TableCell className="hidden md:table-cell">{prod.brokenEggs}</TableCell>
                             <TableCell className="text-center">
