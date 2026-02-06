@@ -1,43 +1,87 @@
--- ============================================================
--- MIGRATION 001: Unify Production Records and Egg Production Tables
--- ============================================================
--- This migration modifies ProductionRecord to serve as the single
--- source of truth for both Production Records and Egg Production pages.
--- ============================================================
--- RUN THIS SCRIPT AGAINST YOUR DATABASE BEFORE DEPLOYING THE NEW API
--- ============================================================
+
+
+-- Step 0: Create ProductionRecord table if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[ProductionRecord] (
+        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+        [FarmId] NVARCHAR(100) NOT NULL,
+        [UserId] NVARCHAR(100) NULL,
+        [CreatedBy] NVARCHAR(100) NOT NULL,
+        [UpdatedBy] NVARCHAR(100) NULL,
+        [AgeInWeeks] INT NOT NULL DEFAULT 0,
+        [AgeInDays] INT NOT NULL DEFAULT 0,
+        [Date] DATE NOT NULL,
+        [NoOfBirds] INT NOT NULL DEFAULT 0,
+        [Mortality] INT NOT NULL DEFAULT 0,
+        [NoOfBirdsLeft] INT NOT NULL DEFAULT 0,
+        [FeedKg] DECIMAL(18,2) NOT NULL DEFAULT 0,
+        [Medication] NVARCHAR(500) NULL,
+        [Production9AM] INT NOT NULL DEFAULT 0,
+        [Production12PM] INT NOT NULL DEFAULT 0,
+        [Production4PM] INT NOT NULL DEFAULT 0,
+        [TotalProduction] INT NOT NULL DEFAULT 0,
+        [FlockId] INT NULL,
+        [BrokenEggs] INT NULL,
+        [Notes] NVARCHAR(MAX) NULL,
+        [EggCount] INT NULL DEFAULT 0,
+        [CreatedAt] DATETIME NOT NULL DEFAULT GETUTCDATE(),
+        [UpdatedAt] DATETIME NULL
+    );
+    PRINT 'Created ProductionRecord table';
+    
+    -- Create index on FarmId for faster queries
+    CREATE INDEX IX_ProductionRecord_FarmId ON [dbo].[ProductionRecord] ([FarmId]);
+    CREATE INDEX IX_ProductionRecord_Date ON [dbo].[ProductionRecord] ([Date]);
+    CREATE INDEX IX_ProductionRecord_FlockId ON [dbo].[ProductionRecord] ([FlockId]) WHERE [FlockId] IS NOT NULL;
+    PRINT 'Created indexes on ProductionRecord table';
+END
+ELSE
+BEGIN
+    PRINT 'ProductionRecord table already exists';
+END
+GO
 
 -- Step 1: Add BrokenEggs and Notes columns to ProductionRecord if they don't exist
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'BrokenEggs')
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
 BEGIN
-    ALTER TABLE [dbo].[ProductionRecord] ADD [BrokenEggs] INT NULL;
-    PRINT 'Added BrokenEggs column to ProductionRecord table';
-END
-ELSE
-BEGIN
-    PRINT 'BrokenEggs column already exists';
-END
-GO
-
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'Notes')
-BEGIN
-    ALTER TABLE [dbo].[ProductionRecord] ADD [Notes] NVARCHAR(MAX) NULL;
-    PRINT 'Added Notes column to ProductionRecord table';
-END
-ELSE
-BEGIN
-    PRINT 'Notes column already exists';
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'BrokenEggs')
+    BEGIN
+        ALTER TABLE [dbo].[ProductionRecord] ADD [BrokenEggs] INT NULL;
+        PRINT 'Added BrokenEggs column to ProductionRecord table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'BrokenEggs column already exists';
+    END
 END
 GO
 
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'EggCount')
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
 BEGIN
-    ALTER TABLE [dbo].[ProductionRecord] ADD [EggCount] INT NULL DEFAULT 0;
-    PRINT 'Added EggCount column to ProductionRecord table';
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'Notes')
+    BEGIN
+        ALTER TABLE [dbo].[ProductionRecord] ADD [Notes] NVARCHAR(MAX) NULL;
+        PRINT 'Added Notes column to ProductionRecord table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'Notes column already exists';
+    END
 END
-ELSE
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
 BEGIN
-    PRINT 'EggCount column already exists';
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'EggCount')
+    BEGIN
+        ALTER TABLE [dbo].[ProductionRecord] ADD [EggCount] INT NULL DEFAULT 0;
+        PRINT 'Added EggCount column to ProductionRecord table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'EggCount column already exists';
+    END
 END
 GO
 

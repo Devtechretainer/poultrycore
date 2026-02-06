@@ -100,7 +100,11 @@ builder.Services.AddCors(options =>
             "http://localhost:3001",
             "https://localhost:3001",
             "https://localhost:7278",
-            "http://localhost:7278"  // Web app
+            "http://localhost:7278",  // Web app
+            "https://poultrymaster.com",
+            "https://www.poultrymaster.com",
+            "http://poultrymaster.com",
+            "http://www.poultrymaster.com"
         };
 
         // Get production frontend URL from configuration
@@ -144,6 +148,11 @@ builder.Services.AddCors(options =>
                     origin.Contains(".ngrok.io") || 
                     origin.Contains(".ngrok-free.dev") ||
                     origin.Contains(".ngrok.app"))
+                    return true;
+
+                // Allow production domains
+                if (origin.Contains("poultrymaster.com") || 
+                    origin.Contains("techretainer.com"))
                     return true;
 
                 return false;

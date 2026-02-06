@@ -1,21 +1,40 @@
--- ============================================================
--- MIGRATION 002: Sync Feed Usage with Production Record
--- ============================================================
--- This migration creates triggers and procedures to automatically
--- sync FeedUsage records when ProductionRecord is updated.
--- ============================================================
--- RUN THIS SCRIPT AFTER MIGRATION 001
--- ============================================================
 
--- Step 1: Add a column to track if FeedUsage came from ProductionRecord
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[FeedUsage]') AND name = 'SourceProductionRecordId')
+
+-- Step 0: Create FeedUsage table if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[FeedUsage]') AND type in (N'U'))
 BEGIN
-    ALTER TABLE [dbo].[FeedUsage] ADD [SourceProductionRecordId] INT NULL;
-    PRINT 'Added SourceProductionRecordId column to FeedUsage table';
+    CREATE TABLE [dbo].[FeedUsage] (
+        [FeedUsageId] INT IDENTITY(1,1) PRIMARY KEY,
+        [FlockId] INT NOT NULL,
+        [UsageDate] DATE NOT NULL,
+        [FeedType] NVARCHAR(100) NOT NULL DEFAULT 'General Feed',
+        [QuantityKg] DECIMAL(18,2) NOT NULL DEFAULT 0,
+        [UserId] NVARCHAR(100) NULL,
+        [FarmId] NVARCHAR(100) NOT NULL,
+        [SourceProductionRecordId] INT NULL
+    );
+    PRINT 'Created FeedUsage table';
+    
+    -- Create indexes
+    CREATE INDEX IX_FeedUsage_FarmId ON [dbo].[FeedUsage] ([FarmId]);
+    CREATE INDEX IX_FeedUsage_FlockId ON [dbo].[FeedUsage] ([FlockId]);
+    CREATE INDEX IX_FeedUsage_UsageDate ON [dbo].[FeedUsage] ([UsageDate]);
+    PRINT 'Created indexes on FeedUsage table';
 END
 ELSE
 BEGIN
-    PRINT 'SourceProductionRecordId column already exists';
+    PRINT 'FeedUsage table already exists';
+    
+    -- Step 1: Add a column to track if FeedUsage came from ProductionRecord
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[FeedUsage]') AND name = 'SourceProductionRecordId')
+    BEGIN
+        ALTER TABLE [dbo].[FeedUsage] ADD [SourceProductionRecordId] INT NULL;
+        PRINT 'Added SourceProductionRecordId column to FeedUsage table';
+    END
+    ELSE
+    BEGIN
+        PRINT 'SourceProductionRecordId column already exists';
+    END
 END
 GO
 
@@ -218,6 +237,84 @@ END
 GO
 
 PRINT 'Updated spFeedUsage_GetById';
+GO
+
+-- Step 8: Create spFeedUsage_Insert if it doesn't exist
+IF OBJECT_ID('spFeedUsage_Insert', 'P') IS NOT NULL
+    DROP PROCEDURE spFeedUsage_Insert;
+GO
+
+CREATE PROCEDURE [dbo].[spFeedUsage_Insert]
+    @UserId NVARCHAR(100),
+    @FarmId NVARCHAR(100),
+    @FlockId INT,
+    @UsageDate DATE,
+    @FeedType NVARCHAR(100),
+    @QuantityKg DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    INSERT INTO [dbo].[FeedUsage] (FlockId, UsageDate, FeedType, QuantityKg, UserId, FarmId)
+    VALUES (@FlockId, @UsageDate, @FeedType, @QuantityKg, @UserId, @FarmId);
+    
+    SELECT SCOPE_IDENTITY();
+END
+GO
+
+PRINT 'Created spFeedUsage_Insert';
+GO
+
+-- Step 9: Create spFeedUsage_Update if it doesn't exist
+IF OBJECT_ID('spFeedUsage_Update', 'P') IS NOT NULL
+    DROP PROCEDURE spFeedUsage_Update;
+GO
+
+CREATE PROCEDURE [dbo].[spFeedUsage_Update]
+    @FeedUsageId INT,
+    @UserId NVARCHAR(100),
+    @FarmId NVARCHAR(100),
+    @FlockId INT,
+    @UsageDate DATE,
+    @FeedType NVARCHAR(100),
+    @QuantityKg DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    UPDATE [dbo].[FeedUsage]
+    SET 
+        FlockId = @FlockId,
+        UsageDate = @UsageDate,
+        FeedType = @FeedType,
+        QuantityKg = @QuantityKg,
+        UserId = @UserId
+    WHERE FeedUsageId = @FeedUsageId AND FarmId = @FarmId;
+END
+GO
+
+PRINT 'Created spFeedUsage_Update';
+GO
+
+-- Step 10: Create spFeedUsage_Delete if it doesn't exist
+IF OBJECT_ID('spFeedUsage_Delete', 'P') IS NOT NULL
+    DROP PROCEDURE spFeedUsage_Delete;
+GO
+
+CREATE PROCEDURE [dbo].[spFeedUsage_Delete]
+    @FeedUsageId INT,
+    @UserId NVARCHAR(100),
+    @FarmId NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DELETE FROM [dbo].[FeedUsage]
+    WHERE FeedUsageId = @FeedUsageId AND FarmId = @FarmId;
+END
+GO
+
+PRINT 'Created spFeedUsage_Delete';
 GO
 
 PRINT '';

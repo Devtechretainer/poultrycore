@@ -24,5 +24,12 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.tspoultry-zen-main/poultry-zen-main/*.zip
+next-env.d.ts
+
+# backend publish folder
+PoultryPro/PoultryFarmAPI/publish/
+PoultryPro/PoultryFarmAPI/publish.zip
+
+# zip files
 poultry-zen-main/poultry-zen-main/*.zip
+*.zip
