@@ -278,7 +278,7 @@ export default function ExpensesPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-7xl mx-auto">
+            <div className="space-y-6">
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
