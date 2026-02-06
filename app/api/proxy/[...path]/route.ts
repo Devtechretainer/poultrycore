@@ -124,7 +124,19 @@ async function handleRequest(
     console.log(`[Proxy API] ${isAdminApi ? 'Admin' : 'Main'} API - Forwarding ${method} request to:`, targetUrl)
     console.log('[Proxy API] Request headers:', Object.fromEntries(headers.entries()))
     
-    const response = await fetch(targetUrl, fetchOptions)
+    // Add timeout to detect connection issues (30 seconds)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    
+    let response: Response
+    try {
+      response = await fetch(targetUrl, { 
+        ...fetchOptions, 
+        signal: controller.signal 
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
     
     console.log('[Proxy API] Response status:', response.status, response.statusText)
     console.log('[Proxy API] Response headers:', Object.fromEntries(response.headers.entries()))
@@ -200,13 +212,20 @@ async function handleRequest(
     return nextResponse
   } catch (error: any) {
     console.error('[Proxy API] Error forwarding request:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: error?.message || 'Failed to forward request to backend API' 
-      },
-      { status: 500 }
-    )
+    console.error('[Proxy API] Error name:', error?.name)
+    console.error('[Proxy API] Error cause:', error?.cause)
+    console.error('[Proxy API] Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+    
+    // Provide more detailed error information
+    const errorMessage = error?.cause?.message || error?.message || 'Failed to forward request to backend API'
+    const errorDetails = {
+      success: false,
+      message: errorMessage,
+      errorType: error?.name || 'Unknown',
+      errorCode: error?.cause?.code || error?.code || null,
+    }
+    
+    return NextResponse.json(errorDetails, { status: 500 })
   }
 }
 
