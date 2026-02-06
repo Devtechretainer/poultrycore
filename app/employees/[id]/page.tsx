@@ -139,7 +139,7 @@ export default function EditEmployeePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-3xl mx-auto">
+          <div className="space-y-6">
             {/* Back Button */}
             <Button
               variant="ghost"

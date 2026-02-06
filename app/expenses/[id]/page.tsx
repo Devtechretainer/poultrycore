@@ -195,7 +195,7 @@ export default function EditExpensePage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="space-y-6">
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
@@ -215,7 +215,7 @@ export default function EditExpensePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-6 space-y-6">
             {/* Page Header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">

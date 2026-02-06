@@ -201,7 +201,7 @@ export default function EditEggProductionPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="space-y-6 space-y-6">
               <div className="animate-pulse">
                 <div className="h-10 w-1/2 bg-slate-200 rounded mb-6"></div>
                 <div className="p-6 bg-white rounded-lg shadow-sm space-y-4">
@@ -227,7 +227,7 @@ export default function EditEggProductionPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-6 space-y-6">
             {/* Page Header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">

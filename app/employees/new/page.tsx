@@ -144,7 +144,7 @@ export default function NewEmployeePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-6 space-y-6">
             {/* Page Header */}
             <div className="flex items-center gap-4 mb-8">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
