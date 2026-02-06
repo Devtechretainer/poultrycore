@@ -295,7 +295,7 @@ export default function ProductionRecordsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       <DashboardSidebar onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
@@ -420,7 +420,7 @@ export default function ProductionRecordsPage() {
               <Card className="bg-white"><CardContent className="py-6">
                 <div className="space-y-3">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-10 w-full bg-slate-100 animate-pulse rounded" />
+                    <div key={i} className="h-10 w-full bg-slate-50 animate-pulse rounded" />
                   ))}
                 </div>
               </CardContent></Card>
@@ -468,7 +468,7 @@ export default function ProductionRecordsPage() {
                             <TableCell className="text-right px-3 py-2">{(r.feedKg ?? 0).toFixed ? r.feedKg.toFixed(2) : r.feedKg}</TableCell>
                             <TableCell className="text-right px-3 py-2">{r.noOfBirds ?? 0}</TableCell>
                             <TableCell className="text-right px-3 py-2">
-                              <span className={cn("px-2 py-0.5 rounded text-xs", (r.mortality ?? 0) > 0 ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-600")}>{r.mortality ?? 0}</span>
+                              <span className={cn("px-2 py-0.5 rounded text-xs", (r.mortality ?? 0) > 0 ? "bg-red-50 text-red-700" : "bg-slate-50 text-slate-600")}>{r.mortality ?? 0}</span>
                             </TableCell>
                             <TableCell className="text-right px-3 py-2">{r.noOfBirdsLeft ?? 0}</TableCell>
                             <TableCell className="px-3 py-2">{r.medication || "-"}</TableCell>

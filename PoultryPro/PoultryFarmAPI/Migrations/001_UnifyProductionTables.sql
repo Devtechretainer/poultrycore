@@ -1,9 +1,9 @@
 
 
 -- Step 0: Create ProductionRecord table if it doesn't exist
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND type in (N'U'))
 BEGIN
-    CREATE TABLE [dbo].[ProductionRecord] (
+    CREATE TABLE [dbo].[ProductionRecords] (
         [Id] INT IDENTITY(1,1) PRIMARY KEY,
         [FarmId] NVARCHAR(100) NOT NULL,
         [UserId] NVARCHAR(100) NULL,
@@ -31,9 +31,9 @@ BEGIN
     PRINT 'Created ProductionRecord table';
     
     -- Create index on FarmId for faster queries
-    CREATE INDEX IX_ProductionRecord_FarmId ON [dbo].[ProductionRecord] ([FarmId]);
-    CREATE INDEX IX_ProductionRecord_Date ON [dbo].[ProductionRecord] ([Date]);
-    CREATE INDEX IX_ProductionRecord_FlockId ON [dbo].[ProductionRecord] ([FlockId]) WHERE [FlockId] IS NOT NULL;
+    CREATE INDEX IX_ProductionRecords_FarmId ON [dbo].[ProductionRecords] ([FarmId]);
+    CREATE INDEX IX_ProductionRecords_Date ON [dbo].[ProductionRecords] ([Date]);
+    CREATE INDEX IX_ProductionRecords_FlockId ON [dbo].[ProductionRecords] ([FlockId]) WHERE [FlockId] IS NOT NULL;
     PRINT 'Created indexes on ProductionRecord table';
 END
 ELSE
@@ -43,11 +43,11 @@ END
 GO
 
 -- Step 1: Add BrokenEggs and Notes columns to ProductionRecord if they don't exist
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND type in (N'U'))
 BEGIN
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'BrokenEggs')
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND name = 'BrokenEggs')
     BEGIN
-        ALTER TABLE [dbo].[ProductionRecord] ADD [BrokenEggs] INT NULL;
+        ALTER TABLE [dbo].[ProductionRecords] ADD [BrokenEggs] INT NULL;
         PRINT 'Added BrokenEggs column to ProductionRecord table';
     END
     ELSE
@@ -57,11 +57,11 @@ BEGIN
 END
 GO
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND type in (N'U'))
 BEGIN
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'Notes')
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND name = 'Notes')
     BEGIN
-        ALTER TABLE [dbo].[ProductionRecord] ADD [Notes] NVARCHAR(MAX) NULL;
+        ALTER TABLE [dbo].[ProductionRecords] ADD [Notes] NVARCHAR(MAX) NULL;
         PRINT 'Added Notes column to ProductionRecord table';
     END
     ELSE
@@ -71,11 +71,11 @@ BEGIN
 END
 GO
 
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND type in (N'U'))
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND type in (N'U'))
 BEGIN
-    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecord]') AND name = 'EggCount')
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[ProductionRecords]') AND name = 'EggCount')
     BEGIN
-        ALTER TABLE [dbo].[ProductionRecord] ADD [EggCount] INT NULL DEFAULT 0;
+        ALTER TABLE [dbo].[ProductionRecords] ADD [EggCount] INT NULL DEFAULT 0;
         PRINT 'Added EggCount column to ProductionRecord table';
     END
     ELSE
@@ -118,7 +118,7 @@ BEGIN
     -- Calculate EggCount if not provided (use TotalProduction)
     SET @EggCount = ISNULL(@EggCount, @TotalProduction);
     
-    INSERT INTO [dbo].[ProductionRecord] (
+    INSERT INTO [dbo].[ProductionRecords] (
         FarmId, CreatedBy, UserId, AgeInWeeks, AgeInDays, [Date],
         NoOfBirds, Mortality, NoOfBirdsLeft, FeedKg, Medication,
         Production9AM, Production12PM, Production4PM, TotalProduction,
@@ -169,7 +169,7 @@ BEGIN
     -- Calculate EggCount if not provided
     SET @EggCount = ISNULL(@EggCount, @TotalProduction);
     
-    UPDATE [dbo].[ProductionRecord]
+    UPDATE [dbo].[ProductionRecords]
     SET 
         UpdatedBy = @UpdatedBy,
         AgeInWeeks = @AgeInWeeks,
@@ -216,7 +216,7 @@ BEGIN
         Production9AM, Production12PM, Production4PM, TotalProduction,
         FlockId, BrokenEggs, Notes, ISNULL(EggCount, TotalProduction) AS EggCount,
         CreatedAt, UpdatedAt
-    FROM [dbo].[ProductionRecord]
+    FROM [dbo].[ProductionRecords]
     WHERE Id = @RecordId AND FarmId = @FarmId;
 END
 GO
@@ -243,7 +243,7 @@ BEGIN
         Production9AM, Production12PM, Production4PM, TotalProduction,
         FlockId, BrokenEggs, Notes, ISNULL(EggCount, TotalProduction) AS EggCount,
         CreatedAt, UpdatedAt
-    FROM [dbo].[ProductionRecord]
+    FROM [dbo].[ProductionRecords]
     WHERE FarmId = @FarmId
     ORDER BY [Date] DESC, CreatedAt DESC;
 END
@@ -265,7 +265,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    DELETE FROM [dbo].[ProductionRecord]
+    DELETE FROM [dbo].[ProductionRecords]
     WHERE Id = @RecordId AND FarmId = @FarmId;
 END
 GO
@@ -307,7 +307,7 @@ BEGIN
     END
     
     -- Insert into ProductionRecord table (the unified table)
-    INSERT INTO [dbo].[ProductionRecord] (
+    INSERT INTO [dbo].[ProductionRecords] (
         FarmId, CreatedBy, UserId, 
         AgeInWeeks, AgeInDays, [Date],
         NoOfBirds, Mortality, NoOfBirdsLeft, FeedKg, Medication,
@@ -358,7 +358,7 @@ BEGIN
         SET @TotalProduction = @EggCount;
     END
     
-    UPDATE [dbo].[ProductionRecord]
+    UPDATE [dbo].[ProductionRecords]
     SET 
         FlockId = @FlockId,
         [Date] = @ProductionDate,
@@ -402,7 +402,7 @@ BEGIN
         Notes,
         ISNULL(UserId, CreatedBy) AS UserId,
         FarmId
-    FROM [dbo].[ProductionRecord]
+    FROM [dbo].[ProductionRecords]
     WHERE Id = @ProductionId AND FarmId = @FarmId;
 END
 GO
@@ -432,7 +432,7 @@ BEGIN
         Notes,
         ISNULL(UserId, CreatedBy) AS UserId,
         FarmId
-    FROM [dbo].[ProductionRecord]
+    FROM [dbo].[ProductionRecords]
     WHERE FarmId = @FarmId
     ORDER BY [Date] DESC, CreatedAt DESC;
 END
@@ -464,7 +464,7 @@ BEGIN
         Notes,
         ISNULL(UserId, CreatedBy) AS UserId,
         FarmId
-    FROM [dbo].[ProductionRecord]
+    FROM [dbo].[ProductionRecords]
     WHERE FlockId = @FlockId AND FarmId = @FarmId
     ORDER BY [Date] DESC;
 END
@@ -484,7 +484,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    DELETE FROM [dbo].[ProductionRecord]
+    DELETE FROM [dbo].[ProductionRecords]
     WHERE Id = @ProductionId AND FarmId = @FarmId;
 END
 GO
@@ -507,7 +507,7 @@ BEGIN
     IF @EggProductionCount > 0
     BEGIN
         -- Insert EggProduction records that don't already exist in ProductionRecord
-        INSERT INTO [dbo].[ProductionRecord] (
+        INSERT INTO [dbo].[ProductionRecords] (
             FarmId, CreatedBy, UserId, 
             AgeInWeeks, AgeInDays, [Date],
             NoOfBirds, Mortality, NoOfBirdsLeft, FeedKg, Medication,
@@ -531,7 +531,7 @@ BEGIN
             GETUTCDATE()
         FROM [dbo].[EggProduction] ep
         WHERE NOT EXISTS (
-            SELECT 1 FROM [dbo].[ProductionRecord] pr 
+            SELECT 1 FROM [dbo].[ProductionRecords] pr 
             WHERE pr.FarmId = ep.FarmId 
             AND pr.[Date] = ep.ProductionDate 
             AND pr.FlockId = ep.FlockId

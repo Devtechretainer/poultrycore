@@ -130,7 +130,7 @@ export default function ReportsPage() {
   // exports removed per requirements
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
       <DashboardSidebar onLogout={handleLogout} />
       

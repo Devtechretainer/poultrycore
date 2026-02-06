@@ -94,7 +94,7 @@ export default function EditCustomerPage() {
 
   if (fetchLoading) {
     return (
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-slate-50">
         {/* Sidebar */}
         <DashboardSidebar onLogout={handleLogout} />
         
@@ -118,7 +118,7 @@ export default function EditCustomerPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
       <DashboardSidebar onLogout={handleLogout} />
       

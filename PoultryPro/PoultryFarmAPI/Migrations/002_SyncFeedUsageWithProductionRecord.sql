@@ -44,7 +44,7 @@ IF OBJECT_ID('trg_ProductionRecord_InsertFeedUsage', 'TR') IS NOT NULL
 GO
 
 CREATE TRIGGER [dbo].[trg_ProductionRecord_InsertFeedUsage]
-ON [dbo].[ProductionRecord]
+ON [dbo].[ProductionRecords]
 AFTER INSERT
 AS
 BEGIN
@@ -82,7 +82,7 @@ IF OBJECT_ID('trg_ProductionRecord_UpdateFeedUsage', 'TR') IS NOT NULL
 GO
 
 CREATE TRIGGER [dbo].[trg_ProductionRecord_UpdateFeedUsage]
-ON [dbo].[ProductionRecord]
+ON [dbo].[ProductionRecords]
 AFTER UPDATE
 AS
 BEGIN
@@ -131,7 +131,7 @@ IF OBJECT_ID('trg_ProductionRecord_DeleteFeedUsage', 'TR') IS NOT NULL
 GO
 
 CREATE TRIGGER [dbo].[trg_ProductionRecord_DeleteFeedUsage]
-ON [dbo].[ProductionRecord]
+ON [dbo].[ProductionRecords]
 AFTER DELETE
 AS
 BEGIN
@@ -162,7 +162,7 @@ SELECT
     ISNULL(pr.UserId, pr.CreatedBy),
     pr.FarmId,
     pr.Id
-FROM [dbo].[ProductionRecord] pr
+FROM [dbo].[ProductionRecords] pr
 WHERE pr.FeedKg > 0 
 AND pr.FlockId IS NOT NULL
 AND NOT EXISTS (

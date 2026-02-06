@@ -482,7 +482,7 @@ export default function FlocksPage() {
   }, [filteredFlocks])
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       <DashboardSidebar onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
@@ -724,7 +724,7 @@ export default function FlocksPage() {
             ) : filteredFlocks.length === 0 ? (
               <Card className="bg-white">
                 <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Bird className="w-8 h-8 text-slate-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">No flocks found</h3>

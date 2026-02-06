@@ -167,7 +167,7 @@ export default function NewFlockPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       <DashboardSidebar onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />

@@ -8,6 +8,7 @@ namespace PoultryFarmAPIWeb.Models
         public string UserId { get; set; }
         public int ProductionId { get; set; }
         public int FlockId { get; set; }
+        public string? FlockName { get; set; }
         public DateTime ProductionDate { get; set; }
         public int EggCount { get; set; }
         [JsonPropertyName("production9AM")]

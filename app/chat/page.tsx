@@ -75,7 +75,7 @@ export default function ChatPage() {
           <div className="h-80 overflow-auto border rounded p-3 space-y-2">
             {messages.map(m => (
               <div key={m.messageId} className={`flex ${m.userId===userId?"justify-end":"justify-start"}`}>
-                <div className={`px-3 py-2 rounded-lg ${m.userId===userId?"bg-blue-600 text-white":"bg-slate-100"}`}>
+                <div className={`px-3 py-2 rounded-lg ${m.userId===userId?"bg-blue-600 text-white":"bg-slate-50"}`}>
                   {m.content}
                 </div>
               </div>

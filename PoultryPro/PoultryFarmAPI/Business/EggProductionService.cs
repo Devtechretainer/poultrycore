@@ -153,11 +153,13 @@ namespace PoultryFarmAPIWeb.Business
                     {
                         ProductionId = reader.GetInt32(reader.GetOrdinal("ProductionId")),
                         FlockId = reader.GetInt32(reader.GetOrdinal("FlockId")),
+                        FlockName = reader.IsDBNull(reader.GetOrdinal("FlockName")) ? "Unknown Flock" : reader.GetString(reader.GetOrdinal("FlockName")),
                         ProductionDate = reader.GetDateTime(reader.GetOrdinal("ProductionDate")),
                         EggCount = reader.GetInt32(reader.GetOrdinal("EggCount")),
                         Production9AM = reader.IsDBNull(reader.GetOrdinal("Production9AM")) ? 0 : reader.GetInt32(reader.GetOrdinal("Production9AM")),
                         Production12PM = reader.IsDBNull(reader.GetOrdinal("Production12PM")) ? 0 : reader.GetInt32(reader.GetOrdinal("Production12PM")),
                         Production4PM = reader.IsDBNull(reader.GetOrdinal("Production4PM")) ? 0 : reader.GetInt32(reader.GetOrdinal("Production4PM")),
+                        TotalProduction = reader.IsDBNull(reader.GetOrdinal("TotalProduction")) ? 0 : reader.GetInt32(reader.GetOrdinal("TotalProduction")),
                         BrokenEggs = reader.IsDBNull(reader.GetOrdinal("BrokenEggs"))
                             ? null
                             : reader.GetInt32(reader.GetOrdinal("BrokenEggs")),
@@ -167,7 +169,6 @@ namespace PoultryFarmAPIWeb.Business
                         UserId = reader.GetString(reader.GetOrdinal("UserId")),
                         FarmId = reader.IsDBNull(reader.GetOrdinal("FarmId")) ? null : reader.GetString(reader.GetOrdinal("FarmId"))
                     };
-                    ep.TotalProduction = ep.Production9AM + ep.Production12PM + ep.Production4PM;
                     list.Add(ep);
                 }
                 return list;

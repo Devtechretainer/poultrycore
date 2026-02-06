@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-slate-50">
         {/* Sidebar - hidden on mobile, shown as overlay */}
         <DashboardSidebar onLogout={handleLogout} />
         
