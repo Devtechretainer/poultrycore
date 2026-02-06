@@ -80,11 +80,22 @@ async function handleRequest(
     const queryString = searchParams ? `?${searchParams}` : ''
     const targetUrl = `${apiBaseUrl}/api/${path}${queryString}`
 
-    // Get headers from the incoming request (except host, which we'll replace)
+    // Get headers from the incoming request (except problematic ones)
     const headers = new Headers()
+    // Headers that should NOT be forwarded to backend
+    const skipHeaders = [
+      'host', 
+      'content-length', 
+      'expect',              // Node.js fetch doesn't support Expect header
+      'connection',          // Don't forward connection-specific headers
+      'transfer-encoding',   // Let fetch handle transfer encoding
+      'upgrade',             // Don't forward upgrade headers
+      'keep-alive',          // Don't forward keep-alive headers
+    ]
+    
     request.headers.forEach((value, key) => {
       // Skip headers that shouldn't be forwarded
-      if (!['host', 'content-length'].includes(key.toLowerCase())) {
+      if (!skipHeaders.includes(key.toLowerCase())) {
         headers.set(key, value)
       }
     })
