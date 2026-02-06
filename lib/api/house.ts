@@ -42,7 +42,7 @@ function mapHouse(raw: any): House {
   return {
     houseId: Number(raw.houseId ?? raw.HouseId ?? 0),
     farmId: raw.farmId ?? raw.FarmId ?? "",
-    name: raw.name ?? raw.HouseName ?? "",
+    name: raw.name ?? raw.Name ?? raw.HouseName ?? raw.houseName ?? "",
     capacity: raw.capacity ?? raw.Capacity ?? null,
     createdDate: raw.createdDate ?? raw.CreatedDate ?? undefined,
     location: raw.location ?? raw.Location ?? null,
