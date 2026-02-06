@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
+import { InfoSection, InfoRow, PageHeader, StatusBadge } from "@/components/ui/info-section"
 import { type UserProfile } from "@/lib/api/user-profile"
-import { Edit2, Save, X, User, Mail, Phone, Building2, Shield, Lock } from "lucide-react"
+import { Edit2, Save, X, User, Mail, Phone, Building2, Shield, Check } from "lucide-react"
 import { SuccessModal } from "@/components/auth/success-modal"
 import { AuthService } from "@/lib/services/auth.service"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -47,7 +48,6 @@ export default function ProfilePage() {
     try {
       const userData = await AuthService.getCurrentUser()
       
-      // Safely handle potentially missing fields
       const username = userData.username || ""
       const email = userData.email || ""
       
@@ -88,10 +88,7 @@ export default function ProfilePage() {
         farmName: userData.farmName || "",
       })
     } catch (error: any) {
-      // Handle 404 or other API errors gracefully - fallback to localStorage data
       if (error?.status === 404 || (error instanceof Error && error.message.includes('404'))) {
-        console.log("[Profile] API endpoint not available, using localStorage data")
-        // Fallback to localStorage for profile data
         const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
         const username = typeof window !== "undefined" ? localStorage.getItem("username") : null
         const farmId = typeof window !== "undefined" ? localStorage.getItem("farmId") : null
@@ -102,7 +99,7 @@ export default function ProfilePage() {
             id: userId,
             userName: username,
             normalizedUserName: username.toUpperCase(),
-            email: username, // Use username as fallback for email
+            email: username,
             normalizedEmail: username.toUpperCase(),
             emailConfirmed: false,
             passwordHash: "",
@@ -132,7 +129,6 @@ export default function ProfilePage() {
             phoneNumber: "",
             farmName: farmName || "",
           })
-          // Don't set error for 404 - it's acceptable to use localStorage
           setIsLoading(false)
           return
         }
@@ -140,7 +136,6 @@ export default function ProfilePage() {
       
       console.error("Error loading profile:", error)
       setError(error instanceof Error ? error.message : "Failed to load profile. Please try again.")
-      // If 401, redirect to login
       if (error?.status === 401 || (error instanceof Error && error.message.includes('401'))) {
         router.push('/login')
       }
@@ -157,7 +152,6 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setIsEditing(false)
     setError("")
-    // Reset form data to original profile data
     if (profile) {
       setFormData({
         firstName: profile.firstName || "",
@@ -195,7 +189,6 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          // Fallback: API route not present. Persist to localStorage and update UI.
           if (typeof window !== "undefined") {
             localStorage.setItem("firstName", formData.firstName)
             localStorage.setItem("lastName", formData.lastName)
@@ -229,7 +222,6 @@ export default function ProfilePage() {
       })
       setShowSuccess(true)
       setIsEditing(false)
-      // Reload profile to get updated data
       await loadProfile()
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to update profile")
@@ -268,7 +260,6 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        // Fallback: Update localStorage if API is not available
         if (response.status === 404) {
           localStorage.setItem("twoFactorEnabled", enabled ? "true" : "false")
           setProfile((prev) => prev ? ({ ...prev, twoFactorEnabled: enabled }) : prev)
@@ -283,7 +274,6 @@ export default function ProfilePage() {
 
       const result = await response.json()
       
-      // Update profile state
       setProfile((prev) => prev ? ({ ...prev, twoFactorEnabled: enabled }) : prev)
       localStorage.setItem("twoFactorEnabled", enabled ? "true" : "false")
       
@@ -303,16 +293,10 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-slate-100">
-        {/* Sidebar */}
+      <div className="flex h-screen bg-slate-50">
         <DashboardSidebar onLogout={logout} />
-        
-        {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
           <DashboardHeader />
-          
-          {/* Main Content Area */}
           <main className="flex-1 overflow-y-auto p-6">
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -328,284 +312,202 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        {/* Sidebar */}
+      <div className="flex h-screen bg-slate-50">
         <DashboardSidebar onLogout={logout} />
         
-        {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
           <DashboardHeader />
           
-          {/* Main Content Area */}
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-3xl mx-auto">
               {/* Page Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Profile</h1>
-                    <p className="text-slate-600 mt-1">View and manage your account information</p>
-                  </div>
-                </div>
-                {!isEditing ? (
-                  <Button 
-                    onClick={handleEdit} 
-                    className="h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 transition-all"
-                  >
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <div className="flex gap-3">
-                    <Button 
-                      onClick={handleCancel} 
-                      variant="outline" 
-                      disabled={isSaving}
-                      className="h-12 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
+              <PageHeader 
+                title="User Profile"
+                subtitle="Manage information about you and this account"
+                action={
+                  !isEditing ? (
+                    <Button onClick={handleEdit} variant="outline" className="gap-2">
+                      <Edit2 className="w-4 h-4" />
+                      Edit
                     </Button>
-                    <Button 
-                      onClick={handleSave} 
-                      className="h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 transition-all" 
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          Saving...
-                        </span>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                        {isSaving ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Saving...
+                          </span>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )
+                }
+              />
 
               {/* Error Alert */}
               {error && (
-                <Alert variant="destructive" className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+                <Alert variant="destructive" className="mb-6">
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
-              {/* Profile Card */}
-              <Card className="border-0 shadow-xl bg-white">
-                <CardContent className="p-8 space-y-8">
-                  {/* Personal Information */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <User className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Personal Information</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sm font-semibold text-slate-700">
-                          First Name
-                        </Label>
-                        {isEditing ? (
+              <div className="space-y-4">
+                {/* About You Section */}
+                <InfoSection title="About you" collapsible={false}>
+                  {isEditing ? (
+                    <div className="space-y-4 py-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-slate-600">First Name</Label>
                           <Input
-                            id="firstName"
                             value={formData.firstName}
                             onChange={(e) => handleInputChange("firstName", e.target.value)}
-                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                            disabled={isSaving}
                             placeholder="John"
+                            disabled={isSaving}
                           />
-                        ) : (
-                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
-                            {profile?.firstName || "Not set"}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sm font-semibold text-slate-700">
-                          Last Name
-                        </Label>
-                        {isEditing ? (
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-slate-600">Last Name</Label>
                           <Input
-                            id="lastName"
                             value={formData.lastName}
                             onChange={(e) => handleInputChange("lastName", e.target.value)}
-                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                            disabled={isSaving}
                             placeholder="Doe"
-                          />
-                        ) : (
-                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
-                            {profile?.lastName || "Not set"}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contact Information */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <Mail className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Contact Information</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
-                          Email Address
-                        </Label>
-                        {isEditing ? (
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange("email", e.target.value)}
-                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                             disabled={isSaving}
-                            placeholder="john@example.com"
                           />
-                        ) : (
-                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
-                            {profile?.email || "Not set"}
-                          </p>
-                        )}
+                        </div>
                       </div>
+                    </div>
+                  ) : (
+                    <>
+                      <InfoRow label="Account type" value={profile?.isStaff ? "Staff" : profile?.isSubscriber ? "Subscriber" : "Organization"} />
+                      <InfoRow label="User ID" value={<span className="font-mono text-xs">{profile?.id}</span>} />
+                      <InfoRow label="Username" value={profile?.userName} />
+                      <InfoRow label="Full name" value={`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || "Not set"} />
+                    </>
+                  )}
+                </InfoSection>
 
+                {/* Contact Information */}
+                <InfoSection title="Contact information" collapsible={false}>
+                  {isEditing ? (
+                    <div className="space-y-4 py-2">
                       <div className="space-y-2">
-                        <Label htmlFor="phoneNumber" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-blue-600" />
-                          Phone Number
-                        </Label>
-                        {isEditing ? (
-                          <Input
-                            id="phoneNumber"
-                            type="tel"
-                            value={formData.phoneNumber}
-                            onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                            className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                            disabled={isSaving}
-                            placeholder="+1 (555) 123-4567"
-                          />
-                        ) : (
-                          <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
-                            {profile?.phoneNumber || "Not set"}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Farm Information */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <Building2 className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Farm Information</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="farmName" className="text-sm font-semibold text-slate-700">
-                        Farm Name
-                      </Label>
-                      {isEditing ? (
+                        <Label className="text-sm text-slate-600">Email address</Label>
                         <Input
-                          id="farmName"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          placeholder="john@example.com"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Phone number</Label>
+                        <Input
+                          type="tel"
+                          value={formData.phoneNumber}
+                          onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                          disabled={isSaving}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <InfoRow 
+                        label="Email address" 
+                        value={
+                          <div className="flex items-center gap-2">
+                            {profile?.email}
+                            {profile?.emailConfirmed && <Check className="w-4 h-4 text-emerald-500" />}
+                          </div>
+                        }
+                        icon={<Mail className="w-4 h-4" />}
+                      />
+                      <InfoRow 
+                        label="Phone number" 
+                        value={profile?.phoneNumber}
+                        icon={<Phone className="w-4 h-4" />}
+                      />
+                    </>
+                  )}
+                </InfoSection>
+
+                {/* Farm Information */}
+                <InfoSection title="Farm details" collapsible={false}>
+                  {isEditing ? (
+                    <div className="space-y-4 py-2">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Farm name</Label>
+                        <Input
                           value={formData.farmName}
                           onChange={(e) => handleInputChange("farmName", e.target.value)}
-                          className="h-12 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                          disabled={isSaving}
                           placeholder="My Farm"
+                          disabled={isSaving}
                         />
-                      ) : (
-                        <p className="h-12 px-4 py-3 bg-slate-50 rounded-lg text-slate-900 flex items-center border border-slate-200">
-                          {profile?.farmName || "Not set"}
-                        </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <InfoRow 
+                        label="Farm name" 
+                        value={profile?.farmName}
+                        icon={<Building2 className="w-4 h-4" />}
+                      />
+                      <InfoRow 
+                        label="Farm ID" 
+                        value={<span className="font-mono text-xs">{profile?.farmId}</span>}
+                      />
+                    </>
+                  )}
+                </InfoSection>
 
-                  {/* Account Status */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <Shield className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Account Status</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-lg">
-                        <p className="text-sm text-slate-600 mb-1">Username</p>
-                        <p className="font-medium text-slate-900">{profile?.userName}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-lg">
-                        <p className="text-sm text-slate-600 mb-1">Email Verified</p>
-                        <p className="font-medium text-slate-900">
-                          {profile?.emailConfirmed ? (
-                            <span className="text-green-600">Verified</span>
-                          ) : (
-                            <span className="text-amber-600">Not Verified</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-lg">
-                        <p className="text-sm text-slate-600 mb-1">Account Type</p>
-                        <p className="font-medium text-slate-900">
-                          {profile?.isStaff ? "Staff" : profile?.isSubscriber ? "Subscriber" : "Regular"}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-lg">
-                        <p className="text-sm text-slate-600 mb-1">Phone Verified</p>
-                        <p className="font-medium text-slate-900">
-                          {profile?.phoneNumberConfirmed ? (
-                            <span className="text-green-600">Verified</span>
-                          ) : (
-                            <span className="text-amber-600">Not Verified</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                {/* Account Status */}
+                <InfoSection title="Account status" collapsible={false}>
+                  <InfoRow 
+                    label="Email verified" 
+                    value={<StatusBadge status={profile?.emailConfirmed ? "verified" : "unverified"} />}
+                  />
+                  <InfoRow 
+                    label="Phone verified" 
+                    value={<StatusBadge status={profile?.phoneNumberConfirmed ? "verified" : "unverified"} />}
+                  />
+                </InfoSection>
 
-                  {/* Security Settings */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <Lock className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Security Settings</h3>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Shield className="w-4 h-4 text-blue-600" />
-                            <p className="font-medium text-slate-900">Two-Factor Authentication</p>
-                          </div>
-                          <p className="text-sm text-slate-600">
+                {/* Security */}
+                <InfoSection title="Security" collapsible={false}>
+                  <div className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Shield className="w-5 h-5 text-slate-400" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">Two-factor authentication</p>
+                          <p className="text-xs text-slate-500">
                             {profile?.twoFactorEnabled 
-                              ? "2FA is enabled. You'll receive OTP codes via email during login."
-                              : "Add an extra layer of security to your account by enabling two-factor authentication."}
+                              ? "Enabled - OTP codes sent via email"
+                              : "Add extra security to your account"}
                           </p>
                         </div>
-                        <div className="ml-4">
-                          <Switch
-                            checked={profile?.twoFactorEnabled || false}
-                            onCheckedChange={handleToggle2FA}
-                            disabled={isToggling2FA}
-                            aria-label="Toggle two-factor authentication"
-                          />
-                        </div>
                       </div>
-                      {isToggling2FA && (
-                        <p className="text-xs text-slate-500 mt-2">
-                          {profile?.twoFactorEnabled ? "Disabling..." : "Enabling..."}
-                        </p>
-                      )}
+                      <Switch
+                        checked={profile?.twoFactorEnabled || false}
+                        onCheckedChange={handleToggle2FA}
+                        disabled={isToggling2FA}
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </InfoSection>
+              </div>
             </div>
           </main>
         </div>

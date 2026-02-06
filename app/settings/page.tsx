@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { Save } from "lucide-react"
+import { InfoSection, InfoRow, PageHeader } from "@/components/ui/info-section"
+import { Save, Settings, MapPin, DollarSign, Building2 } from "lucide-react"
 import { SuccessModal } from "@/components/auth/success-modal"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function SettingsPage() {
   const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
@@ -30,7 +32,6 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      // Load farm settings from localStorage
       const farmName = localStorage.getItem("farmName") || ""
       const farmLocation = localStorage.getItem("farmLocation") || ""
       const currency = localStorage.getItem("currency") || "GHS"
@@ -50,19 +51,12 @@ export default function SettingsPage() {
     setError("")
 
     try {
-      // Save to localStorage
       localStorage.setItem("farmName", formData.farmName)
       localStorage.setItem("farmLocation", formData.farmLocation)
       localStorage.setItem("currency", formData.currency.toUpperCase())
 
-      // Here you would typically also save to the backend API
-      // await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings`, {
-      //   method: "PUT",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(formData),
-      // })
-
       setShowSuccess(true)
+      setIsEditing(false)
     } catch (error) {
       setError("Failed to save settings. Please try again.")
     }
@@ -91,96 +85,121 @@ export default function SettingsPage() {
 
   return (
     <>
-      <div className="flex h-screen bg-slate-100">
-        {/* Sidebar */}
+      <div className="flex h-screen bg-slate-50">
         <DashboardSidebar onLogout={handleLogout} />
         
-        {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
           <DashboardHeader />
           
-          {/* Main Content Area */}
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-3xl mx-auto">
               {/* Page Header */}
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">Farm Settings</h1>
-                <p className="text-slate-600 mt-1">Update your farm information</p>
-              </div>
+              <PageHeader 
+                title="Farm Settings"
+                subtitle="Manage your farm configuration and preferences"
+                action={
+                  !isEditing ? (
+                    <Button onClick={() => setIsEditing(true)} variant="outline" className="gap-2">
+                      <Settings className="w-4 h-4" />
+                      Edit Settings
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button onClick={() => { setIsEditing(false); loadSettings() }} variant="outline" disabled={isSaving}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                        {isSaving ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Saving...
+                          </span>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )
+                }
+              />
 
               {/* Error Alert */}
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
+                <Alert variant="destructive" className="mb-6">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
-              {/* Settings Card */}
-              <Card className="bg-white">
-                <CardContent className="p-6 space-y-6">
-                  {/* Farm Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="farmName" className="text-sm font-medium text-slate-700">
-                      Farm Name
-                    </Label>
-                    <Input
-                      id="farmName"
-                      value={formData.farmName}
-                      onChange={(e) => handleInputChange("farmName", e.target.value)}
-                      placeholder="Enter farm name"
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      disabled={isSaving}
-                    />
-                  </div>
+              <div className="space-y-4">
+                {/* Farm Details */}
+                <InfoSection title="Farm details" collapsible={false}>
+                  {isEditing ? (
+                    <div className="space-y-4 py-2">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Farm name</Label>
+                        <Input
+                          value={formData.farmName}
+                          onChange={(e) => handleInputChange("farmName", e.target.value)}
+                          placeholder="Enter your farm name"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Farm location</Label>
+                        <Input
+                          value={formData.farmLocation}
+                          onChange={(e) => handleInputChange("farmLocation", e.target.value)}
+                          placeholder="Enter farm location"
+                          disabled={isSaving}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <InfoRow 
+                        label="Farm name" 
+                        value={formData.farmName}
+                        icon={<Building2 className="w-4 h-4" />}
+                      />
+                      <InfoRow 
+                        label="Location" 
+                        value={formData.farmLocation}
+                        icon={<MapPin className="w-4 h-4" />}
+                      />
+                    </>
+                  )}
+                </InfoSection>
 
-                  {/* Farm Location */}
-                  <div className="space-y-2">
-                    <Label htmlFor="farmLocation" className="text-sm font-medium text-slate-700">
-                      Farm Location
-                    </Label>
-                    <Input
-                      id="farmLocation"
-                      value={formData.farmLocation}
-                      onChange={(e) => handleInputChange("farmLocation", e.target.value)}
-                      placeholder="Enter farm location"
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      disabled={isSaving}
+                {/* Regional Settings */}
+                <InfoSection title="Regional settings" collapsible={false}>
+                  {isEditing ? (
+                    <div className="space-y-4 py-2">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Currency</Label>
+                        <Input
+                          value={formData.currency}
+                          onChange={(e) => handleInputChange("currency", e.target.value.toUpperCase())}
+                          placeholder="GHS"
+                          maxLength={3}
+                          disabled={isSaving}
+                        />
+                        <p className="text-xs text-slate-500">
+                          3-letter currency code (USD, EUR, GBP, GHS, KES, NGN)
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <InfoRow 
+                      label="Currency" 
+                      value={formData.currency || "GHS"}
+                      icon={<DollarSign className="w-4 h-4" />}
                     />
-                  </div>
-
-                  {/* Currency */}
-                  <div className="space-y-2">
-                    <Label htmlFor="currency" className="text-sm font-medium text-slate-700">
-                      Currency
-                    </Label>
-                    <Input
-                      id="currency"
-                      value={formData.currency}
-                      onChange={(e) => handleInputChange("currency", e.target.value)}
-                      placeholder="GHS"
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      disabled={isSaving}
-                      maxLength={3}
-                    />
-                    <p className="text-sm text-slate-500">
-                      Enter 3-letter currency code (USD, EUR, GBP, GHS, KES, NGN, etc.)
-                    </p>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="pt-4">
-                    <Button
-                      onClick={handleSave}
-                      className="w-full bg-green-600 hover:bg-green-700 h-11"
-                      disabled={isSaving}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {isSaving ? "Saving..." : "Save Farm Settings"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                </InfoSection>
+              </div>
             </div>
           </main>
         </div>
@@ -188,8 +207,8 @@ export default function SettingsPage() {
 
       {showSuccess && (
         <SuccessModal
-          title="Settings Saved Successfully!"
-          message="Your farm settings have been updated"
+          title="Settings Saved!"
+          message="Your farm settings have been updated successfully"
           onClose={() => setShowSuccess(false)}
           buttonText="Continue"
         />
