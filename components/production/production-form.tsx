@@ -169,7 +169,24 @@ export function ProductionForm({ open, onOpenChange, record, onSaved, mode = "mo
       return
     }
     
-    // Load feed type from feed usage if available
+    // First, set the main form data from the record
+    const baseFormData = {
+      flockId: String((record as any).flockId || ""),
+      date: (record.date || "").split("T")[0],
+      morning: String(record.production9AM ?? ""),
+      noon: String(record.production12PM ?? ""),
+      evening: String(record.production4PM ?? ""),
+      feedKg: String(record.feedKg ?? ""),
+      feedType: "",
+      mortality: String(record.mortality ?? ""),
+      numBirds: String(record.noOfBirds ?? ""),
+      notes: "",
+      medication: record.medication || "",
+    }
+    
+    setForm(baseFormData)
+    
+    // Then try to load feed type from feed usage
     const loadFeedType = async () => {
       const { userId, farmId } = getUserContext()
       if (!userId || !farmId || !record.id) return
@@ -183,26 +200,11 @@ export function ProductionForm({ open, onOpenChange, record, onSaved, mode = "mo
           )
           if (matchingFeedUsage) {
             setForm(prev => ({ ...prev, feedType: matchingFeedUsage.feedType || "" }))
-            return
           }
         }
       } catch (e) {
         console.error("Error loading feed type:", e)
       }
-      
-      setForm({
-        flockId: String((record as any).flockId || ""),
-        date: (record.date || "").split("T")[0],
-        morning: String(record.production9AM ?? ""),
-        noon: String(record.production12PM ?? ""),
-        evening: String(record.production4PM ?? ""),
-        feedKg: String(record.feedKg ?? ""),
-        feedType: "",
-        mortality: String(record.mortality ?? ""),
-        numBirds: String(record.noOfBirds ?? ""),
-        notes: "",
-        medication: record.medication || "",
-      })
     }
     
     loadFeedType()
