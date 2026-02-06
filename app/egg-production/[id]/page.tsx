@@ -60,18 +60,45 @@ export default function EditEggProductionPage() {
         getFlockBatches(userId, farmId)
     ])
 
+    // Set flock batches first so we can use them for matching
+    let batches: FlockBatch[] = []
+    if(flocksRes.success && flocksRes.data) {
+        batches = flocksRes.data
+        setFlockBatches(batches)
+    }
+
     if (eggProductionRes.success && eggProductionRes.data) {
       const eggProd = eggProductionRes.data
+      
+      // Try to find the matching flock batch
+      let matchedFlockId = eggProd.flockId
+      
+      // If we have a flockName, try to match by name (more reliable)
+      if (eggProd.flockName && batches.length > 0) {
+        const matchedBatch = batches.find(
+          b => b.batchName?.toLowerCase() === eggProd.flockName?.toLowerCase() ||
+               b.batchId === eggProd.flockId
+        )
+        if (matchedBatch) {
+          matchedFlockId = matchedBatch.batchId
+        }
+      }
+      
+      // Also check if the flockId directly matches a batchId
+      const directMatch = batches.find(b => b.batchId === eggProd.flockId)
+      if (directMatch) {
+        matchedFlockId = directMatch.batchId
+      }
+      
+      console.log("[v0] Edit: Original flockId:", eggProd.flockId, "FlockName:", eggProd.flockName, "Matched to batchId:", matchedFlockId)
+      
       setFormData({
         ...eggProd,
+        flockId: matchedFlockId,
         productionDate: eggProd.productionDate.split('T')[0],
       })
     } else {
       setError(eggProductionRes.message || "Failed to load production data")
-    }
-
-    if(flocksRes.success && flocksRes.data) {
-        setFlockBatches(flocksRes.data)
     }
     
     setLoading(false)
