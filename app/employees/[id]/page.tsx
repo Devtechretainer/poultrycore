@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -9,11 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { UserCog, ArrowLeft } from "lucide-react"
+import { InfoSection, InfoRow, PageHeader } from "@/components/ui/info-section"
+import { UserCog, ArrowLeft, Save, Mail, Phone, User } from "lucide-react"
 import { getEmployee, updateEmployee, type UpdateEmployeeData } from "@/lib/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { usePermissions } from "@/hooks/use-permissions"
-import { Card, CardContent } from "@/components/ui/card"
 
 export default function EditEmployeePage() {
   const router = useRouter()
@@ -22,23 +21,24 @@ export default function EditEmployeePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [isEditing, setIsEditing] = useState(true) // Start in edit mode since this is an edit page
   
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     phoneNumber: "",
     email: "",
+    userName: "",
+    createdDate: "",
   })
 
   const employeeId = params.id as string
 
   useEffect(() => {
-    // Wait for permissions to load
     if (permissions.isLoading) {
       return
     }
     
-    // Check if user is admin
     if (!permissions.isAdmin) {
       router.push("/dashboard")
       return
@@ -59,6 +59,8 @@ export default function EditEmployeePage() {
           lastName: result.data.lastName,
           phoneNumber: result.data.phoneNumber,
           email: result.data.email,
+          userName: result.data.userName || "",
+          createdDate: result.data.createdDate || "",
         })
       } else {
         setError(result.message || "Failed to load employee")
@@ -110,15 +112,17 @@ export default function EditEmployeePage() {
     router.push("/login")
   }
 
-  // Show loading while checking permissions
   if (permissions.isLoading) {
     return (
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-slate-50">
         <DashboardSidebar onLogout={handleLogout} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
-            <p className="text-slate-600">Loading...</p>
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-slate-600">Loading...</p>
+            </div>
           </main>
         </div>
       </div>
@@ -130,137 +134,155 @@ export default function EditEmployeePage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-50">
       <DashboardSidebar onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-3xl mx-auto">
+            {/* Back Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/employees")}
+              className="mb-4 text-slate-600 hover:text-slate-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Employees
+            </Button>
+
             {/* Page Header */}
-            <div className="flex items-center gap-3 mb-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push("/employees")}
-                className="h-10 w-10"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <UserCog className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Edit Employee</h1>
-                <p className="text-slate-600">Update employee information</p>
-              </div>
-            </div>
+            <PageHeader 
+              title="Edit Employee"
+              subtitle="Update employee information and contact details"
+              action={
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push("/employees")}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSubmit}
+                    disabled={saving || loading}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {saving ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Saving...
+                      </span>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </div>
+              }
+            />
 
             {/* Error Alert */}
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="mb-6">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {/* Loading State */}
             {loading ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-slate-600">Loading employee information...</p>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-600">Loading employee information...</p>
+              </div>
             ) : (
-              /* Form */
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-4 p-6 bg-white rounded-lg shadow-sm">
-                  <h3 className="text-lg font-semibold text-slate-900">Employee Information</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">
-                        First Name *
-                      </Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        type="text"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                        required
-                        disabled={saving}
-                      />
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Personal Information */}
+                <InfoSection title="Personal information" collapsible={false}>
+                  <div className="space-y-4 py-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">First name *</Label>
+                        <Input
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          placeholder="John"
+                          required
+                          disabled={saving}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-slate-600">Last name *</Label>
+                        <Input
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          placeholder="Doe"
+                          required
+                          disabled={saving}
+                        />
+                      </div>
                     </div>
+                  </div>
+                </InfoSection>
 
+                {/* Contact Information */}
+                <InfoSection title="Contact information" collapsible={false}>
+                  <div className="space-y-4 py-2">
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">
-                        Last Name *
+                      <Label className="text-sm text-slate-600 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email address *
                       </Label>
                       <Input
-                        id="lastName"
-                        name="lastName"
-                        type="text"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                        required
-                        disabled={saving}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                        Email *
-                      </Label>
-                      <Input
-                        id="email"
                         name="email"
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="john@example.com"
                         required
                         disabled={saving}
                       />
                     </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="phoneNumber" className="text-sm font-medium text-slate-700">
-                        Phone Number *
+                      <Label className="text-sm text-slate-600 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Phone number *
                       </Label>
                       <Input
-                        id="phoneNumber"
                         name="phoneNumber"
                         type="tel"
                         value={formData.phoneNumber}
                         onChange={handleChange}
-                        className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="+1 (555) 123-4567"
                         required
                         disabled={saving}
                       />
                     </div>
                   </div>
-                </div>
+                </InfoSection>
 
-                {/* Form Actions */}
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 h-11 border-slate-200"
-                    disabled={saving}
-                    onClick={() => router.push("/employees")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 h-11 bg-blue-600 hover:bg-blue-700"
-                    disabled={saving}
-                  >
-                    {saving ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
+                {/* Account Information (Read-only) */}
+                <InfoSection title="Account information" collapsible={false}>
+                  <InfoRow 
+                    label="Username" 
+                    value={formData.userName ? `@${formData.userName}` : "Not set"}
+                    icon={<User className="w-4 h-4" />}
+                  />
+                  <InfoRow 
+                    label="Employee ID" 
+                    value={<span className="font-mono text-xs">{employeeId}</span>}
+                  />
+                  {formData.createdDate && (
+                    <InfoRow 
+                      label="Created" 
+                      value={new Date(formData.createdDate).toLocaleDateString()}
+                    />
+                  )}
+                </InfoSection>
               </form>
             )}
           </div>
